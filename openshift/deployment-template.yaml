@@ -39,6 +39,11 @@ parameters:
     displayName: No TLS verify for Container registry
     value: "0"
 
+  - name: SERVICE_ACCOUNT
+    description: Name of service account for bot - should have view permissions on watched namespace.
+    displayName: Build watcher service account
+    value: "analyzer"
+
 objects:
   - kind: DeploymentConfig
     apiVersion: v1
@@ -46,18 +51,16 @@ objects:
       labels:
         app: thoth
         component: build-watcher
-      name: build-watcher
+      name: "build-watcher-${THOTH_WATCHED_NAMESPACE}"
     spec:
       replicas: 1
-      selector:
-        name: "build-watcher-${THOTH_WATCHED_NAMESPACE}"
       template:
         metadata:
           labels:
             app: thoth
-            name: build-watcher
+            component: build-watcher
         spec:
-          serviceAccountName: analyzer
+          serviceAccountName: "${SERVICE_ACCOUNT}"
           containers:
             - name: build-watcher
               env:
@@ -72,20 +75,20 @@ objects:
                 - name: THOTH_USER_API_HOST
                   value: "${THOTH_USER_API_HOST}"
                 - name: THOTH_NO_TLS_VERIFY
-                  value: "${THOTH_NO_TLS_VEIRIFY"}
+                  value: "${THOTH_NO_TLS_VEIRIFY}"
                 - name: THOTH_NO_REGISTRY_TLS_VERIFY
                   value: "${THOTH_NO_REGISTRY_TLS_VERIFY}"
-                  # If you watch for in-cluster builds, keep pass-token and have image-puller rights assigned in
+                  # If you watch for in-cluster builds, keep pass-token and have view rights assigned in
                   # service account.
                 - name: THOTH_PASS_TOKEN
-                  vaenvvar="lue: "1"
+                  value: "1"
                   # If you would like to analyze images pushed to external registry (transparent to build-watcher),
                   # provide credentials:
                   # - envvar="name: THOTH_REGISTRY_USER
                   #   envvar="value: ""
                   # - envvar="name: THOTH_REGISTRY_PASSWORD
                   #   envvar="value: ""
-                - naenvvar="me: PROMETHEUS_PUSHGATEWAY_HOST
+                - name: PROMETHEUS_PUSHGATEWAY_HOST
                   valueFrom:
                     configMapKeyRef:
                       key: prometheus-pushgateway-host
