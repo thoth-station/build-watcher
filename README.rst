@@ -8,7 +8,7 @@ This is a simple bot that watches for in-cluster build events. If there is a
 successful build, build-watcher submits the resulting image to Thoth's analysis endpoint.
 
 The image, tag and registry are obtained from build specification. If you push
-images to an internal registry, make sure the bot has ``image-puller`` rights have
+images to an internal registry, make sure the bot has ``image-puller`` rights and has
 ``THOTH_PASS_TOKEN`` flag set. The bot will propagate this token to Thoth's User API
 which will pull the image for analysis.
 
