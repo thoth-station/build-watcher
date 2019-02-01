@@ -1,0 +1,120 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: build-watcher-deployment
+  annotations:
+    description: This is Thoth - Build Watcher
+    openshift.io/display-name: 'Thoth Core: Build Watcher'
+    version: 0.0.1
+    tags: poc,thoth,build-watcher,ai-stacks,aistacks
+    template.openshift.io/documentation-url: https://github.com/Thoth-Station/
+    template.openshift.io/long-description: >
+      This template defines resources needed to deploy Thoth Build
+      Watcher on OpenShift.
+    template.openshift.io/provider-display-name: Red Hat, Inc.
+  labels:
+    template: build-watcher-deployment
+    app: thoth
+    component: build-watcher
+
+parameters:
+  - description: Tag of the ImageStream to use
+    displayName: ImageStream Tag
+    required: true
+    name: IMAGE_STREAM_TAG
+    value: 'latest'
+
+  - description: Namespace on which Build Watcher should listen to builds.
+    displayName: Build Watcher namespace
+    required: true
+    name: THOTH_WATCHED_NAMESPACE
+
+  - name: THOTH_NO_TLS_VERIFY
+    description: Do not perform TLS verification when communicating with Thoth User API.
+    displayName: No TLS verify for User API
+    value: "0"
+
+  - name: THOTH_NO_REGISTRY_TLS_VERIFY
+    description: Do not perform TLS verification when communicating with Container Image registry.
+    displayName: No TLS verify for Container registry
+    value: "0"
+
+objects:
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      labels:
+        app: thoth
+        component: build-watcher
+      name: build-watcher
+    spec:
+      replicas: 1
+      selector:
+        name: "build-watcher-${THOTH_WATCHED_NAMESPACE}"
+      template:
+        metadata:
+          labels:
+            app: thoth
+            name: build-watcher
+        spec:
+          serviceAccountName: analyzer
+          containers:
+            - name: build-watcher
+              env:
+                - name: KUBERNETES_API_URL
+                  value: 'https://kubernetes.default.svc.cluster.local'
+                - name: KUBERNETES_VERIFY_TLS
+                  value: "0"
+                - name: THOTH_WATCHED_NAMESPACE
+                  value: "${THOTH_WATCHED_NAMESPACE}"
+                - name: THOTH_LOG_BUILD_WATCHER
+                  value: INFO
+                - name: THOTH_USER_API_HOST
+                  value: "${THOTH_USER_API_HOST}"
+                - name: THOTH_NO_TLS_VERIFY
+                  value: "${THOTH_NO_TLS_VEIRIFY"}
+                - name: THOTH_NO_REGISTRY_TLS_VERIFY
+                  value: "${THOTH_NO_REGISTRY_TLS_VERIFY}"
+                  # If you watch for in-cluster builds, keep pass-token and have image-puller rights assigned in
+                  # service account.
+                - name: THOTH_PASS_TOKEN
+                  vaenvvar="lue: "1"
+                  # If you would like to analyze images pushed to external registry (transparent to build-watcher),
+                  # provide credentials:
+                  # - envvar="name: THOTH_REGISTRY_USER
+                  #   envvar="value: ""
+                  # - envvar="name: THOTH_REGISTRY_PASSWORD
+                  #   envvar="value: ""
+                - naenvvar="me: PROMETHEUS_PUSHGATEWAY_HOST
+                  valueFrom:
+                    configMapKeyRef:
+                      key: prometheus-pushgateway-host
+                      name: thoth
+                - name: PROMETHEUS_PUSHGATEWAY_PORT
+                  valueFrom:
+                    configMapKeyRef:
+                      name: thoth
+                      key: prometheus-pushgateway-port
+                - name: SENTRY_DSN
+                  valueFrom:
+                    secretKeyRef:
+                      name: thoth
+                      key: sentry-dsn
+              resources:
+                requests:
+                  memory: "384Mi"
+                  cpu: "250m"
+                limits:
+                  memory: "384Mi"
+                  cpu: "250m"
+      test: false
+      triggers:
+        - type: ConfigChange
+        - type: ImageChange
+          imageChangeParams:
+            automatic: true
+            containerNames:
+              - build-watcher
+            from:
+              kind: ImageStreamTag
+              name: 'build-watcher:${IMAGE_STREAM_TAG}'

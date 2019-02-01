@@ -1,0 +1,19 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+thoth-common = {git = "https://github.com/thoth-station/common.git"}
+click = "*"
+pyyaml = "*"
+# TODO: the release of OpenShift available on PyPI has a bug with CM watch not
+# being correctly propagated. The current master branch seems to have this
+# issue fixed.
+openshift = {git = "https://github.com/openshift/openshift-restclient-python"}
+thamos = {git = "https://github.com/thoth-station/thamos.git"}
+
+[requires]
+python_version = "3.6"
