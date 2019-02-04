@@ -44,6 +44,16 @@ parameters:
     displayName: Build watcher service account
     value: "analyzer"
 
+  - name: THOTH_USER_API_HOST
+    description: Host to Thoth's User API where images should be submitted for analysis.
+    displayName: Thoth User API host
+    required: true
+
+  - name: THAMOS_DISABLE_TLS_WARNING
+    description: Disable TLS warnings issues by Thamos when communicating with Thoth User API without TLS.
+    displayName: Thamos disable TLS warning
+    value: "0"
+
 objects:
   - kind: DeploymentConfig
     apiVersion: v1
@@ -75,7 +85,7 @@ objects:
                 - name: THOTH_USER_API_HOST
                   value: "${THOTH_USER_API_HOST}"
                 - name: THOTH_NO_TLS_VERIFY
-                  value: "${THOTH_NO_TLS_VEIRIFY}"
+                  value: "${THOTH_NO_TLS_VERIFY}"
                 - name: THOTH_NO_REGISTRY_TLS_VERIFY
                   value: "${THOTH_NO_REGISTRY_TLS_VERIFY}"
                   # If you watch for in-cluster builds, keep pass-token and have view rights assigned in
@@ -88,6 +98,9 @@ objects:
                   #   envvar="value: ""
                   # - envvar="name: THOTH_REGISTRY_PASSWORD
                   #   envvar="value: ""
+                  # Set to a non-zero value to suppres annoying TLS warnings by Thamos lib:
+                - name: THAMOS_DISABLE_TLS_WARNING
+                  value: "${THAMOS_DISABLE_TLS_WARNING}"
                 - name: PROMETHEUS_PUSHGATEWAY_HOST
                   valueFrom:
                     configMapKeyRef:
