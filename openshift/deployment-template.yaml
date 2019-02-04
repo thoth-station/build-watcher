@@ -88,6 +88,9 @@ objects:
                   #   envvar="value: ""
                   # - envvar="name: THOTH_REGISTRY_PASSWORD
                   #   envvar="value: ""
+                  # Set to a non-zero value to suppres annoying TLS warnings by Thamos lib:
+                - name: THAMOS_DISABLE_TLS_WARNING
+                  value: "0"
                 - name: PROMETHEUS_PUSHGATEWAY_HOST
                   valueFrom:
                     configMapKeyRef:
