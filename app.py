@@ -38,7 +38,7 @@ _LOGGER = logging.getLogger("thoth.build_watcher")
     "--verbose",
     "-v",
     is_flag=True,
-    envvar="THOTH_LOG_BUILD_WATCHER",
+    envvar="THOTH_VERBOSE_BUILD_WATCHER",
     help="Be verbose about what is going on.",
 )
 @click.option(
