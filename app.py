@@ -19,6 +19,8 @@
 
 import sys
 import logging
+from multiprocessing import Process
+from multiprocessing import Queue
 
 import click
 
@@ -31,6 +33,26 @@ from thoth.common import OpenShift
 init_logging()
 
 _LOGGER = logging.getLogger("thoth.build_watcher")
+
+
+def event_producer(queue: Queue, build_watcher_namespace: str):
+    """Accept events from the cluster and queue them into work queue processed by the main process."""
+    _LOGGER.info("Starting event producer")
+    openshift = OpenShift()
+    v1_build = openshift.ocp_client.resources.get(api_version="v1", kind="Build")
+    for event in v1_build.watch(namespace=build_watcher_namespace):
+        if event["object"].status.phase != "Complete":
+            _LOGGER.debug(
+                "Ignoring build event for %r - not completed phase %r",
+                event["object"].metadata.name,
+                event["object"].status.phase,
+            )
+            continue
+
+        event_name = event["object"].metadata.name
+        _LOGGER.info("Queueing %r for further processing", event_name)
+        item = (event_name, event["object"].status.outputDockerImageReference)
+        queue.put(item)
 
 
 @click.command()
@@ -112,10 +134,9 @@ def cli(
         thoth_api_host,
     )
 
-    openshift = OpenShift()
-    v1_build = openshift.ocp_client.resources.get(api_version="v1", kind="Build")
     configuration.explicit_host = thoth_api_host
     configuration.tls_verify = not no_tls_verify
+    openshift = OpenShift()
 
     if pass_token:
         if registry_password:
@@ -124,17 +145,13 @@ def cli(
             )
         registry_password = openshift.token
 
-    for event in v1_build.watch(namespace=build_watcher_namespace):
-        if event["object"].status.phase != "Complete":
-            _LOGGER.debug(
-                "Ignoring build event for %r - not completed phase %r",
-                event["object"].metadata.name,
-                event["object"].status.phase,
-            )
-            continue
+    queue = Queue()
+    producer = Process(target=event_producer, args=(queue, build_watcher_namespace))
+    producer.start()
 
-        output_reference = event["object"].status.outputDockerImageReference
-
+    while producer.is_alive():
+        event_name, output_reference = queue.get()
+        _LOGGER.info("Handling %r", event_name)
         try:
             analysis_id = image_analysis(
                 image=output_reference,
@@ -145,7 +162,7 @@ def cli(
             )
             _LOGGER.info(
                 "Successfully submitted %r (output reference %r) to Thoth for analysis; analysis id: %s",
-                event["object"].metadata.name,
+                event_name,
                 output_reference,
                 analysis_id,
             )
@@ -155,6 +172,11 @@ def cli(
                 output_reference,
                 str(exc),
             )
+
+    producer.join()
+
+    # Always fail, this should be run forever.
+    sys.exit(1)
 
 
 if __name__ == "__main__":
