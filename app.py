@@ -33,12 +33,13 @@ from thoth.common import OpenShift
 init_logging()
 
 _LOGGER = logging.getLogger("thoth.build_watcher")
-_OPENSHIFT = OpenShift()
 
 
 def event_producer(queue: Queue, build_watcher_namespace: str):
     """Accept events from the cluster and queue them into work queue processed by the main process."""
-    v1_build = _OPENSHIFT.ocp_client.resources.get(api_version="v1", kind="Build")
+    _LOGGER.info("Starting event producer")
+    openshift = OpenShift()
+    v1_build = openshift.ocp_client.resources.get(api_version="v1", kind="Build")
     for event in v1_build.watch(namespace=build_watcher_namespace):
         if event["object"].status.phase != "Complete":
             _LOGGER.debug(
@@ -48,7 +49,9 @@ def event_producer(queue: Queue, build_watcher_namespace: str):
             )
             continue
 
-        item = (event["object"].metadata.name, event["object"].status.outputDockerImageReference)
+        event_name = event["object"].metadata.name
+        _LOGGER.info("Queueing %r for further processing", event_name)
+        item = (event_name, event["object"].status.outputDockerImageReference)
         queue.put(item)
 
 
@@ -133,13 +136,14 @@ def cli(
 
     configuration.explicit_host = thoth_api_host
     configuration.tls_verify = not no_tls_verify
+    openshift = OpenShift()
 
     if pass_token:
         if registry_password:
             raise ValueError(
                 "Flag --pass-token is disjoint with explicit password propagation"
             )
-        registry_password = _OPENSHIFT.token
+        registry_password = openshift.token
 
     queue = Queue()
     producer = Process(target=event_producer, args=(queue, build_watcher_namespace))
@@ -147,7 +151,7 @@ def cli(
 
     while producer.is_alive():
         event_name, output_reference = queue.get()
-
+        _LOGGER.info("Handling %r", event_name)
         try:
             analysis_id = image_analysis(
                 image=output_reference,
@@ -170,6 +174,9 @@ def cli(
             )
 
     producer.join()
+
+    # Always fail, this should be run forever.
+    sys.exit(1)
 
 
 if __name__ == "__main__":
