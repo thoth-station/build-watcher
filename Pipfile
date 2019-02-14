@@ -14,6 +14,7 @@ pyyaml = "*"
 # issue fixed.
 openshift = {git = "https://github.com/openshift/openshift-restclient-python"}
 thamos = {git = "https://github.com/thoth-station/thamos.git"}
+thoth-analyzer = "*"
 
 [requires]
 python_version = "3.6"
