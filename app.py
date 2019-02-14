@@ -92,8 +92,9 @@ def push_image(
     _LOGGER.debug("Pushing image %r from %r to registry %r, output is %r", image_name, image, push_registry, output)
     cmd += f'docker://{image} docker://{output}'
 
+    _LOGGER.debug("Running: %s", cmd.replace(registry_password, "***"))
     command = run_command(cmd)
-    _LOGGER.debug("%s stdout:\n%s\n%s", _SKOPEO_EXEC_PATH, command.stdount, command.stderr)
+    _LOGGER.debug("%s stdout:\n%s\n%s", _SKOPEO_EXEC_PATH, command.stdout, command.stderr)
 
     return output
 
@@ -215,7 +216,7 @@ def cli(
 
         try:
             if push_registry:
-                _LOGGER.info("Pushing image to an external push registry %r", push_registry)
+                _LOGGER.info("Pushing image %r to an external push registry %r", output_reference, push_registry)
                 output_reference = push_image(
                     output_reference,
                     push_registry,
@@ -224,6 +225,7 @@ def cli(
                     src_verify_tls=not no_registry_tls_verify,
                     dst_verify_tls=not no_registry_tls_verify
                 )
+                _LOGGER.info("Successfully pushed image to %r", output_reference)
 
             analysis_id = image_analysis(
                 image=output_reference,

@@ -54,6 +54,11 @@ parameters:
     displayName: Thamos disable TLS warning
     value: "0"
 
+  - name: THOTH_PUSH_REGISTRY
+    description: External registry to be used to pushing images to before analyzing them.
+    displayName: External push registry.
+    required: false
+
 objects:
   - kind: DeploymentConfig
     apiVersion: v1
@@ -80,6 +85,8 @@ objects:
                   value: "0"
                 - name: THOTH_WATCHED_NAMESPACE
                   value: "${THOTH_WATCHED_NAMESPACE}"
+                - name: THOTH_PUSH_REGISTRY
+                  value: "${THOTH_PUSH_REGISTRY}"
                 - name: THOTH_LOG_BUILD_WATCHER
                   value: INFO
                 - name: THOTH_USER_API_HOST
