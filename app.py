@@ -17,6 +17,7 @@
 
 """A build watch - watch for builds and submit images to Thoth for analysis."""
 
+import os
 import sys
 import logging
 from multiprocessing import Process
@@ -28,11 +29,17 @@ from thamos.lib import image_analysis
 from thamos.config import config as configuration
 from thoth.common import init_logging
 from thoth.common import OpenShift
+from thoth.analyzer import run_command
 
 
 init_logging()
 
 _LOGGER = logging.getLogger("thoth.build_watcher")
+
+_HERE_DIR = os.path.dirname(os.path.abspath(__file__))
+_SKOPEO_EXEC_PATH = os.getenv(
+    "SKOPEO_EXEC_PATH", os.path.join(_HERE_DIR, "bin", "skopeo")
+)
 
 
 def event_producer(queue: Queue, build_watcher_namespace: str):
@@ -53,6 +60,42 @@ def event_producer(queue: Queue, build_watcher_namespace: str):
         _LOGGER.info("Queueing %r for further processing", event_name)
         item = (event_name, event["object"].status.outputDockerImageReference)
         queue.put(item)
+
+
+def push_image(
+        image: str,
+        push_registry: str,
+        registry_user: str = None,
+        registry_password: str = None,
+        src_verify_tls: bool = True,
+        dst_verify_tls: bool = True,
+) -> str:
+    """Push the given image (fully specified with registry info) into another registry."""
+    cmd = f'{_SKOPEO_EXEC_PATH} copy '
+
+    if not src_verify_tls:
+        cmd += '--src-tls-verify=false '
+
+    if not dst_verify_tls:
+        cmd += '--dest-tls-verify=false '
+
+    if registry_user:
+        cmd += f'--dest-creds={registry_user}'
+
+        if registry_password:
+            cmd += f':{registry_password}'
+
+        cmd += ' '
+
+    image_name = image.rsplit('/', maxsplit=1)[1]
+    output = f'{push_registry}/{image_name}'
+    _LOGGER.debug("Pushing image %r from %r to registry %r, output is %r", image_name, image, push_registry, output)
+    cmd += f'docker://{image} docker://{output}'
+
+    command = run_command(cmd)
+    _LOGGER.debug("%s stdout:\n%s\n%s", _SKOPEO_EXEC_PATH, command.stdount, command.stderr)
+
+    return output
 
 
 @click.command()
@@ -91,28 +134,44 @@ def event_producer(queue: Queue, build_watcher_namespace: str):
     "-R",
     is_flag=True,
     envvar="THOTH_NO_REGISTRY_TLS_VERIFY",
-    help="Do not check for TLS certificates when pulling images on Thoth side.",
+    help="Do not check for TLS certificates of registry when pulling images on Thoth side or "
+         "when pushing to a remote push registry.",
 )
 @click.option(
     "--pass-token",
     "-p",
     is_flag=True,
     envvar="THOTH_PASS_TOKEN",
-    help="Pass OpenShift token to User API to enable image pulling.",
+    help="Pass OpenShift token to User API to enable image pulling "
+    "(disjoint with --registry-user and --registry-password).",
 )
 @click.option(
     "--registry-user",
     "-u",
     type=str,
     envvar="THOTH_REGISTRY_USER",
-    help="Registry user used to pull images on Thoth User API.",
+    help="Registry user used to pull images on Thoth User API; if push registry is specified, this user "
+    "is also used to push images to push registry.",
 )
 @click.option(
     "--registry-password",
     "-u",
     type=str,
     envvar="THOTH_REGISTRY_PASSWORD",
-    help="Registry password used to pull images on Thoth User API.",
+    help="Registry password used to pull images on Thoth User API, if push registry is specified, "
+    "this password is also used to push images to push registry.",
+)
+@click.option(
+    "--push-registry",
+    "-r",
+    type=str,
+    envvar="THOTH_PUSH_REGISTRY",
+    help="Push images from the original registry into another registry and use this registry as a source for Thoth. "
+    "This option is suitable if you want to analyze images from different cluster in which an internal registry "
+    "is used without route being exposed. This way you can copy images from internal registry to a remote one "
+    "where Thoth has access to. Thoth will use the push registry specified instead of the original one where "
+    "images were pushed to. If credentials are required to push into push registry, "
+    "see --registry-{user,password} configuration options.",
 )
 def cli(
     build_watcher_namespace: str,
@@ -123,6 +182,7 @@ def cli(
     pass_token: bool = False,
     registry_user: str = None,
     registry_password: str = None,
+    push_registry: str = None,
 ):
     """Build watcher bot for analyzing image builds done in cluster."""
     if verbose:
@@ -152,7 +212,19 @@ def cli(
     while producer.is_alive():
         event_name, output_reference = queue.get()
         _LOGGER.info("Handling %r", event_name)
+
         try:
+            if push_registry:
+                _LOGGER.info("Pushing image to an external push registry %r", push_registry)
+                output_reference = push_image(
+                    output_reference,
+                    push_registry,
+                    registry_user,
+                    registry_password,
+                    src_verify_tls=not no_registry_tls_verify,
+                    dst_verify_tls=not no_registry_tls_verify
+                )
+
             analysis_id = image_analysis(
                 image=output_reference,
                 registry_user=registry_user,

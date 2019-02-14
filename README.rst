@@ -23,6 +23,13 @@ Also note that Thoth provides cache of image results. It's completely fine if
 this bot submits same images for analysis multiple times. Thoth will simply
 return correct analysis id from image analysis result cache.
 
+If you build your images in a cluster and would like to submit images for
+analysis to Thoth which is running inside another cluster, you can configure
+build-watcher to automatically submit images into an external registry
+(assuming the in-cluster one has no route exposed) which will then be used as a
+source registry for Thoth analysis. See push registry configuration in the help
+message.
+
 Deployment
 ==========
 
