@@ -51,6 +51,15 @@ present in ``openshift/`` directory. See required parameters (and also
 commented out parameters in the deployment template) to correctly configure
 this bot.
 
+You need to also have present s2i python-36 image based on CentOS 7:
+
+.. code-block:: console
+
+  oc tag --namespace <your-namespace> docker.io/centos/python-36-centos7:latest python-36-centos7:latest
+
+Make sure you assign correct service account to deployment - build-watcher has
+to be able to monitor build events in the build-watcher namespace.
+
 Using build-watcher as a CLI
 ============================
 
