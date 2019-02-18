@@ -68,7 +68,27 @@ parameters:
     description: Number of workers pushing images to an external registry and submitting image analysis in parallel.
     displayName: Number of workers.
     required: false
-    value: 1
+    value: "1"
+
+  - name: THOTH_SRC_REGISTRY_USER
+    description: Source registry user.
+    displayName: Source registry user.
+    required: false
+
+  - name: THOTH_SRC_REGISTRY_PASSWORD
+    description: Source registry password.
+    displayName: Source registry password.
+    required: false
+
+  - name: THOTH_DST_REGISTRY_USER
+    description: Destination registry user.
+    displayName: Destination registry user.
+    required: false
+
+  - name: THOTH_DST_REGISTRY_PASSWORD
+    description: Destination registry password.
+    displayName: Destination registry password.
+    required: false
 
 objects:
   - kind: DeploymentConfig
@@ -116,23 +136,27 @@ objects:
                   value: "1"
                   # If you would like to analyze images pushed to external registry (transparent to build-watcher),
                   # provide credentials:
-                  # - envvar="name: THOTH_REGISTRY_USER
-                  #   envvar="value: ""
-                  # - envvar="name: THOTH_REGISTRY_PASSWORD
-                  #   envvar="value: ""
-                  # Set to a non-zero value to suppres annoying TLS warnings by Thamos lib:
+                - name: THOTH_SRC_REGISTRY_USER
+                  value: "${THOTH_SRC_REGISTRY_USER}"
+                - name: THOTH_SRC_REGISTRY_PASSWORD
+                  value: "${THOTH_SRC_REGISTRY_PASSWORD}"
+                - name: THOTH_DST_REGISTRY_USER
+                  value: "${THOTH_DST_REGISTRY_USER}"
+                - name: THOTH_DST_REGISTRY_PASSWORD
+                  value: "${THOTH_DST_REGISTRY_PASSWORD}"
+                # Set to a non-zero value to suppres annoying TLS warnings by Thamos lib:
                 - name: THAMOS_DISABLE_TLS_WARNING
                   value: "${THAMOS_DISABLE_TLS_WARNING}"
-                - name: PROMETHEUS_PUSHGATEWAY_HOST
-                  valueFrom:
-                    configMapKeyRef:
-                      key: prometheus-pushgateway-host
-                      name: thoth
-                - name: PROMETHEUS_PUSHGATEWAY_PORT
-                  valueFrom:
-                    configMapKeyRef:
-                      name: thoth
-                      key: prometheus-pushgateway-port
+                # - name: PROMETHEUS_PUSHGATEWAY_HOST
+                #   valueFrom:
+                #     configMapKeyRef:
+                #       key: prometheus-pushgateway-host
+                #       name: thoth
+                # - name: PROMETHEUS_PUSHGATEWAY_PORT
+                #   valueFrom:
+                #     configMapKeyRef:
+                #       name: thoth
+                #       key: prometheus-pushgateway-port
                 - name: SENTRY_DSN
                   valueFrom:
                     secretKeyRef:

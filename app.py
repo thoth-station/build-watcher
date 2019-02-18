@@ -39,24 +39,19 @@ init_logging()
 _LOGGER = logging.getLogger("thoth.build_watcher")
 
 _HERE_DIR = os.path.dirname(os.path.abspath(__file__))
-_SKOPEO_EXEC_PATH = os.getenv(
-    "SKOPEO_EXEC_PATH", os.path.join(_HERE_DIR, "bin", "skopeo")
-)
+_SKOPEO_EXEC_PATH = os.getenv("SKOPEO_EXEC_PATH", os.path.join(_HERE_DIR, "bin", "skopeo"))
 
 
 def _existing_producer(queue: Queue, build_watcher_namespace: str):
     """Query for existing images in image streams and queue them for analysis."""
     openshift = OpenShift()
-    v1_imagestreams = openshift.ocp_client.resources.get(
-        api_version="image.openshift.io/v1", kind="ImageStream"
-    )
+    v1_imagestreams = openshift.ocp_client.resources.get(api_version="image.openshift.io/v1", kind="ImageStream")
     for item in v1_imagestreams.get(namespace=build_watcher_namespace).items:
+        _LOGGER.debug("Found imagestream item: %s", str(item))
         _LOGGER.debug("Listing tags available for %r", item["metadata"]["name"])
         for tag_info in item.status.tags or []:
             output_reference = f"{item.status.dockerImageRepository}:{tag_info.tag}"
-            _LOGGER.info(
-                "Queueing already existing image %r for analysis", output_reference
-            )
+            _LOGGER.info("Queueing already existing image %r for analysis", output_reference)
             queue.put(output_reference)
 
     _LOGGER.info("Queuing existing images for analyses has finished, all of them were scheduled for analysis")
@@ -76,6 +71,7 @@ def _event_producer(queue: Queue, build_watcher_namespace: str):
             )
             continue
 
+        _LOGGER.debug("New build event: %s", str(event))
         event_name = event["object"].metadata.name
         output_reference = event["object"].status.outputDockerImageReference
         _LOGGER.info("Queueing %r based on build event %r for further processing", output_reference, event_name)
@@ -86,22 +82,22 @@ def _do_analyze_image(
     output_reference: str,
     push_registry: str = None,
     *,
-    registry_user: str = None,
-    registry_password: str = None,
+    src_registry_user: str = None,
+    src_registry_password: str = None,
+    dst_registry_user: str = None,
+    dst_registry_password: str = None,
     src_verify_tls: bool = True,
     dst_verify_tls: bool = True,
 ) -> str:
     if push_registry:
-        _LOGGER.info(
-            "Pushing image %r to an external push registry %r",
-            output_reference,
-            push_registry,
-        )
+        _LOGGER.info("Pushing image %r to an external push registry %r", output_reference, push_registry)
         output_reference = _push_image(
             output_reference,
             push_registry,
-            registry_user,
-            registry_password,
+            src_registry_user,
+            src_registry_password,
+            dst_registry_user,
+            dst_registry_password,
             src_verify_tls=src_verify_tls,
             dst_verify_tls=dst_verify_tls,
         )
@@ -109,17 +105,13 @@ def _do_analyze_image(
 
     analysis_id = image_analysis(
         image=output_reference,
-        registry_user=registry_user,
-        registry_password=registry_password,
+        registry_user=dst_registry_user,
+        registry_password=dst_registry_password,
         verify_tls=dst_verify_tls,
         nowait=True,
     )
 
-    _LOGGER.info(
-        "Successfully submitted %r to Thoth for analysis; analysis id: %s",
-        output_reference,
-        analysis_id,
-    )
+    _LOGGER.info("Successfully submitted %r to Thoth for analysis; analysis id: %s", output_reference, analysis_id)
 
     return analysis_id
 
@@ -127,13 +119,15 @@ def _do_analyze_image(
 def _push_image(
     image: str,
     push_registry: str,
-    registry_user: str = None,
-    registry_password: str = None,
+    src_registry_user: str = None,
+    src_registry_password: str = None,
+    dst_registry_user: str = None,
+    dst_registry_password: str = None,
     src_verify_tls: bool = True,
     dst_verify_tls: bool = True,
 ) -> str:
     """Push the given image (fully specified with registry info) into another registry."""
-    cmd = f"{_SKOPEO_EXEC_PATH} copy "
+    cmd = f"{_SKOPEO_EXEC_PATH} --insecure-policy copy "
 
     if not src_verify_tls:
         cmd += "--src-tls-verify=false "
@@ -141,30 +135,32 @@ def _push_image(
     if not dst_verify_tls:
         cmd += "--dest-tls-verify=false "
 
-    if registry_user:
-        cmd += f"--dest-creds={registry_user}"
+    if dst_registry_user or dst_registry_password:
+        dst_registry_user = dst_registry_user or "build-watcher"
+        cmd += f"--dest-creds={dst_registry_user}"
 
-        if registry_password:
-            cmd += f":{registry_password}"
+        if dst_registry_password:
+            cmd += f":{dst_registry_password}"
+
+        cmd += " "
+
+    if src_registry_user or src_registry_password:
+        src_registry_user = src_registry_user or "build-watcher"
+        cmd += f"--src-creds={src_registry_user}"
+
+        if dst_registry_password:
+            cmd += f":{src_registry_password}"
 
         cmd += " "
 
     image_name = image.rsplit("/", maxsplit=1)[1]
     output = f"{push_registry}/{image_name}"
-    _LOGGER.debug(
-        "Pushing image %r from %r to registry %r, output is %r",
-        image_name,
-        image,
-        push_registry,
-        output,
-    )
+    _LOGGER.debug("Pushing image %r from %r to registry %r, output is %r", image_name, image, push_registry, output)
     cmd += f"docker://{image} docker://{output}"
 
-    _LOGGER.debug("Running: %s", cmd.replace(registry_password, "***"))
+    _LOGGER.debug("Running: %s", cmd)
     command = run_command(cmd)
-    _LOGGER.debug(
-        "%s stdout:\n%s\n%s", _SKOPEO_EXEC_PATH, command.stdout, command.stderr
-    )
+    _LOGGER.debug("%s stdout:\n%s\n%s", _SKOPEO_EXEC_PATH, command.stdout, command.stderr)
 
     return output
 
@@ -172,8 +168,10 @@ def _push_image(
 def _submitter(
     queue: Queue,
     push_registry: str,
-    registry_user: str = None,
-    registry_password: str = None,
+    src_registry_user: str = None,
+    src_registry_password: str = None,
+    dst_registry_user: str = None,
+    dst_registry_password: str = None,
     no_registry_tls_verify: bool = False,
 ) -> None:
     """Read messages from queue and submit each message with image to Thoth for analysis."""
@@ -185,26 +183,20 @@ def _submitter(
             _do_analyze_image(
                 output_reference,
                 push_registry,
-                registry_user=registry_user,
-                registry_password=registry_password,
+                src_registry_user=src_registry_user,
+                src_registry_password=src_registry_password,
+                dst_registry_user=dst_registry_user,
+                dst_registry_password=dst_registry_password,
                 src_verify_tls=not no_registry_tls_verify,
                 dst_verify_tls=not no_registry_tls_verify,
             )
         except Exception as exc:
-            _LOGGER.exception(
-                "Failed to submit image %r for analysis to Thoth: %s",
-                output_reference,
-                str(exc),
-            )
+            _LOGGER.exception("Failed to submit image %r for analysis to Thoth: %s", output_reference, str(exc))
 
 
 @click.command()
 @click.option(
-    "--verbose",
-    "-v",
-    is_flag=True,
-    envvar="THOTH_VERBOSE_BUILD_WATCHER",
-    help="Be verbose about what is going on.",
+    "--verbose", "-v", is_flag=True, envvar="THOTH_VERBOSE_BUILD_WATCHER", help="Be verbose about what is going on."
 )
 @click.option(
     "--build-watcher-namespace",
@@ -246,20 +238,33 @@ def _submitter(
     "(disjoint with --registry-user and --registry-password).",
 )
 @click.option(
-    "--registry-user",
+    "--src-registry-user",
     "-u",
     type=str,
-    envvar="THOTH_REGISTRY_USER",
-    help="Registry user used to pull images on Thoth User API; if push registry is specified, this user "
-    "is also used to push images to push registry.",
+    envvar="THOTH_SRC_REGISTRY_USER",
+    help="Registry user used to pull images from defaults to destination registry user if push registry is not used.",
 )
 @click.option(
-    "--registry-password",
+    "--src-registry-password",
     "-u",
     type=str,
-    envvar="THOTH_REGISTRY_PASSWORD",
-    help="Registry password used to pull images on Thoth User API, if push registry is specified, "
-    "this password is also used to push images to push registry.",
+    envvar="THOTH_SRC_REGISTRY_PASSWORD",
+    help="Registry password used to pull images from, defaults to destination registry password if "
+    "push registry is not used.",
+)
+@click.option(
+    "--dst-registry-user",
+    "-u",
+    type=str,
+    envvar="THOTH_DST_REGISTRY_USER",
+    help="Registry user used to pull images on Thoht side.",
+)
+@click.option(
+    "--dst-registry-password",
+    "-u",
+    type=str,
+    envvar="THOTH_DST_REGISTRY_PASSWORD",
+    help="Registry password used to pull images on Thoth side, it defaults to token in case of --pass-token is set.",
 )
 @click.option(
     "--push-registry",
@@ -294,8 +299,10 @@ def cli(
     no_tls_verify: bool = False,
     no_registry_tls_verify: bool = False,
     pass_token: bool = False,
-    registry_user: str = None,
-    registry_password: str = None,
+    src_registry_user: str = None,
+    src_registry_password: str = None,
+    dst_registry_user: str = None,
+    dst_registry_password: str = None,
     push_registry: str = None,
     analyze_existing: bool = None,
     workers_count: int = None,
@@ -316,26 +323,41 @@ def cli(
 
     if analyze_existing:
         # We do this in a standalone process, but reuse worker queue to process images.
-        existing_producer = Process(
-            target=_existing_producer, args=(queue, build_watcher_namespace)
-        )
+        existing_producer = Process(target=_existing_producer, args=(queue, build_watcher_namespace))
         existing_producer.start()
 
     configuration.explicit_host = thoth_api_host
     configuration.tls_verify = not no_tls_verify
     openshift = OpenShift()
 
+    if not push_registry and (src_registry_password or src_registry_user):
+        raise ValueError("Source credentials can be used only if push registry is configured")
+
     if pass_token:
-        if registry_password:
-            raise ValueError(
-                "Flag --pass-token is disjoint with explicit password propagation"
-            )
-        registry_password = openshift.token
+        if src_registry_password:
+            raise ValueError("Flag --pass-token is disjoint with explicit source password propagation")
+
+        src_registry_password = openshift.token
+
+        if not push_registry and (not dst_registry_user and not dst_registry_password):
+            # We do not copy from source, use the source creds for Thoth's analysis.
+            dst_registry_user, dst_registry_password = src_registry_user, src_registry_password
+        elif not dst_registry_user and not dst_registry_password:
+            # Reuse credentials if we are in the cluster.
+            dst_registry_password = openshift.token
 
     producer = Process(target=_event_producer, args=(queue, build_watcher_namespace))
     producer.start()
 
-    args = [queue, push_registry, registry_user, registry_password, no_registry_tls_verify]
+    args = [
+        queue,
+        push_registry,
+        src_registry_user,
+        src_registry_password,
+        dst_registry_user,
+        dst_registry_password,
+        no_registry_tls_verify,
+    ]
     # We do not use multiprocessing's Pool here as we manage lifecycle of workers on our own. If any fails, give
     # up and report errors.
     process_pool = []
