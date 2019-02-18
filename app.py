@@ -44,17 +44,13 @@ _SKOPEO_EXEC_PATH = os.getenv(
 )
 
 
-def get_imagestreams(self, namespace: str):
-    v1_imagestreams = self.ocp_client.resources.get(
-        api_version="image.openshift.io/v1", kind="ImageStream"
-    )
-    return v1_imagestreams.get(namespace=namespace)
-
-
 def _existing_producer(queue: Queue, build_watcher_namespace: str):
     """Query for existing images in image streams and queue them for analysis."""
     openshift = OpenShift()
-    for item in get_imagestreams(openshift, build_watcher_namespace).items:
+    v1_imagestreams = openshift.ocp_client.resources.get(
+        api_version="image.openshift.io/v1", kind="ImageStream"
+    )
+    for item in v1_imagestreams.get(namespace=build_watcher_namespace).items:
         _LOGGER.debug("Listing tags available for %r", item["metadata"]["name"])
         for tag_info in item.status.tags or []:
             output_reference = f"{item.status.dockerImageRepository}:{tag_info.tag}"
@@ -180,7 +176,7 @@ def _submitter(
     registry_password: str = None,
     no_registry_tls_verify: bool = False,
 ) -> None:
-    """Read messages from queue and submit each message with image to Thoth for analysis"""
+    """Read messages from queue and submit each message with image to Thoth for analysis."""
     while True:
         output_reference = queue.get()
         _LOGGER.info("Handling analysis of image %r", output_reference)
