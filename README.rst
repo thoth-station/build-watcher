@@ -30,6 +30,19 @@ build-watcher to automatically submit images into an external registry
 source registry for Thoth analysis. See push registry configuration in the help
 message.
 
+If you are deploying build-watcher into an existing project, you can set
+`THOTH_ANALYZE_EXISTING` which will make build-watcher to query for existing
+images present in image streams and submits all of them (with all tags) to
+Thoth for analysis.
+
+If you are monitoring a cluster with a lot of builds and pushing images to an
+external registry, you can optionally adjust `THOTH_BUILD_WATCHER_WORKERS`
+which will cause build-watcher to start a process pool of workers (defaults to
+1) where each worker will push image to an external registry (if configured so)
+and will submit image for analysis in Thoth. This is handy if pushing to an
+external registry takes some time (large images) and/or there is a lot of
+builds happening in the cluster (e.g. inspection jobs in Thoth).
+
 Deployment
 ==========
 
