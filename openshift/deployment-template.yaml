@@ -59,6 +59,17 @@ parameters:
     displayName: External push registry.
     required: false
 
+  - name: THOTH_ANALYZE_EXISTING
+    description: Query for existing images built and submit them to Thoth for analysis.
+    displayName: Analyze exising images.
+    required: false
+
+  - name: THOTH_BUILD_WATCHER_WORKERS
+    description: Number of workers pushing images to an external registry and submitting image analysis in parallel.
+    displayName: Number of workers.
+    required: false
+    value: 1
+
 objects:
   - kind: DeploymentConfig
     apiVersion: v1
@@ -93,6 +104,10 @@ objects:
                   value: "${THOTH_USER_API_HOST}"
                 - name: THOTH_NO_TLS_VERIFY
                   value: "${THOTH_NO_TLS_VERIFY}"
+                - name: THOTH_ANALYZE_EXISTING
+                  value: "${THOTH_ANALYZE_EXISTING}"
+                - name: THOTH_BUILD_WATCHER_WORKERS
+                  value: "${THOTH_BUILD_WATCHER_WORKERS}"
                 - name: THOTH_NO_REGISTRY_TLS_VERIFY
                   value: "${THOTH_NO_REGISTRY_TLS_VERIFY}"
                   # If you watch for in-cluster builds, keep pass-token and have view rights assigned in

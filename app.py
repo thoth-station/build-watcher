@@ -20,8 +20,10 @@
 import os
 import sys
 import logging
+import time
 from multiprocessing import Process
 from multiprocessing import Queue
+from multiprocessing import Manager
 
 import click
 
@@ -42,7 +44,29 @@ _SKOPEO_EXEC_PATH = os.getenv(
 )
 
 
-def event_producer(queue: Queue, build_watcher_namespace: str):
+def get_imagestreams(self, namespace: str):
+    v1_imagestreams = self.ocp_client.resources.get(
+        api_version="image.openshift.io/v1", kind="ImageStream"
+    )
+    return v1_imagestreams.get(namespace=namespace)
+
+
+def _existing_producer(queue: Queue, build_watcher_namespace: str):
+    """Query for existing images in image streams and queue them for analysis."""
+    openshift = OpenShift()
+    for item in get_imagestreams(openshift, build_watcher_namespace).items:
+        _LOGGER.debug("Listing tags available for %r", item["metadata"]["name"])
+        for tag_info in item.status.tags or []:
+            output_reference = f"{item.status.dockerImageRepository}:{tag_info.tag}"
+            _LOGGER.info(
+                "Queueing already existing image %r for analysis", output_reference
+            )
+            queue.put(output_reference)
+
+    _LOGGER.info("Queuing existing images for analyses has finished, all of them were scheduled for analysis")
+
+
+def _event_producer(queue: Queue, build_watcher_namespace: str):
     """Accept events from the cluster and queue them into work queue processed by the main process."""
     _LOGGER.info("Starting event producer")
     openshift = OpenShift()
@@ -57,46 +81,125 @@ def event_producer(queue: Queue, build_watcher_namespace: str):
             continue
 
         event_name = event["object"].metadata.name
-        _LOGGER.info("Queueing %r for further processing", event_name)
-        item = (event_name, event["object"].status.outputDockerImageReference)
-        queue.put(item)
+        output_reference = event["object"].status.outputDockerImageReference
+        _LOGGER.info("Queueing %r based on build event %r for further processing", output_reference, event_name)
+        queue.put(output_reference)
 
 
-def push_image(
-        image: str,
-        push_registry: str,
-        registry_user: str = None,
-        registry_password: str = None,
-        src_verify_tls: bool = True,
-        dst_verify_tls: bool = True,
+def _do_analyze_image(
+    output_reference: str,
+    push_registry: str = None,
+    *,
+    registry_user: str = None,
+    registry_password: str = None,
+    src_verify_tls: bool = True,
+    dst_verify_tls: bool = True,
+) -> str:
+    if push_registry:
+        _LOGGER.info(
+            "Pushing image %r to an external push registry %r",
+            output_reference,
+            push_registry,
+        )
+        output_reference = _push_image(
+            output_reference,
+            push_registry,
+            registry_user,
+            registry_password,
+            src_verify_tls=src_verify_tls,
+            dst_verify_tls=dst_verify_tls,
+        )
+        _LOGGER.info("Successfully pushed image to %r", output_reference)
+
+    analysis_id = image_analysis(
+        image=output_reference,
+        registry_user=registry_user,
+        registry_password=registry_password,
+        verify_tls=dst_verify_tls,
+        nowait=True,
+    )
+
+    _LOGGER.info(
+        "Successfully submitted %r to Thoth for analysis; analysis id: %s",
+        output_reference,
+        analysis_id,
+    )
+
+    return analysis_id
+
+
+def _push_image(
+    image: str,
+    push_registry: str,
+    registry_user: str = None,
+    registry_password: str = None,
+    src_verify_tls: bool = True,
+    dst_verify_tls: bool = True,
 ) -> str:
     """Push the given image (fully specified with registry info) into another registry."""
-    cmd = f'{_SKOPEO_EXEC_PATH} copy '
+    cmd = f"{_SKOPEO_EXEC_PATH} copy "
 
     if not src_verify_tls:
-        cmd += '--src-tls-verify=false '
+        cmd += "--src-tls-verify=false "
 
     if not dst_verify_tls:
-        cmd += '--dest-tls-verify=false '
+        cmd += "--dest-tls-verify=false "
 
     if registry_user:
-        cmd += f'--dest-creds={registry_user}'
+        cmd += f"--dest-creds={registry_user}"
 
         if registry_password:
-            cmd += f':{registry_password}'
+            cmd += f":{registry_password}"
 
-        cmd += ' '
+        cmd += " "
 
-    image_name = image.rsplit('/', maxsplit=1)[1]
-    output = f'{push_registry}/{image_name}'
-    _LOGGER.debug("Pushing image %r from %r to registry %r, output is %r", image_name, image, push_registry, output)
-    cmd += f'docker://{image} docker://{output}'
+    image_name = image.rsplit("/", maxsplit=1)[1]
+    output = f"{push_registry}/{image_name}"
+    _LOGGER.debug(
+        "Pushing image %r from %r to registry %r, output is %r",
+        image_name,
+        image,
+        push_registry,
+        output,
+    )
+    cmd += f"docker://{image} docker://{output}"
 
     _LOGGER.debug("Running: %s", cmd.replace(registry_password, "***"))
     command = run_command(cmd)
-    _LOGGER.debug("%s stdout:\n%s\n%s", _SKOPEO_EXEC_PATH, command.stdout, command.stderr)
+    _LOGGER.debug(
+        "%s stdout:\n%s\n%s", _SKOPEO_EXEC_PATH, command.stdout, command.stderr
+    )
 
     return output
+
+
+def _submitter(
+    queue: Queue,
+    push_registry: str,
+    registry_user: str = None,
+    registry_password: str = None,
+    no_registry_tls_verify: bool = False,
+) -> None:
+    """Read messages from queue and submit each message with image to Thoth for analysis"""
+    while True:
+        output_reference = queue.get()
+        _LOGGER.info("Handling analysis of image %r", output_reference)
+
+        try:
+            _do_analyze_image(
+                output_reference,
+                push_registry,
+                registry_user=registry_user,
+                registry_password=registry_password,
+                src_verify_tls=not no_registry_tls_verify,
+                dst_verify_tls=not no_registry_tls_verify,
+            )
+        except Exception as exc:
+            _LOGGER.exception(
+                "Failed to submit image %r for analysis to Thoth: %s",
+                output_reference,
+                str(exc),
+            )
 
 
 @click.command()
@@ -136,7 +239,7 @@ def push_image(
     is_flag=True,
     envvar="THOTH_NO_REGISTRY_TLS_VERIFY",
     help="Do not check for TLS certificates of registry when pulling images on Thoth side or "
-         "when pushing to a remote push registry.",
+    "when pushing to a remote push registry.",
 )
 @click.option(
     "--pass-token",
@@ -174,6 +277,20 @@ def push_image(
     "images were pushed to. If credentials are required to push into push registry, "
     "see --registry-{user,password} configuration options.",
 )
+@click.option(
+    "--analyze-existing",
+    is_flag=True,
+    envvar="THOTH_ANALYZE_EXISTING",
+    help="List images which were already built in the cluster and submit them to Thoth for analysis. "
+    "This is applicable for OpenShift's image streams only.",
+)
+@click.option(
+    "--workers-count",
+    type=int,
+    default=1,
+    envvar="THOTH_BUILD_WATCHER_WORKERS",
+    help="Number of worker processes to submit image analysis in parallel.",
+)
 def cli(
     build_watcher_namespace: str,
     thoth_api_host: str = None,
@@ -184,6 +301,8 @@ def cli(
     registry_user: str = None,
     registry_password: str = None,
     push_registry: str = None,
+    analyze_existing: bool = None,
+    workers_count: int = None,
 ):
     """Build watcher bot for analyzing image builds done in cluster."""
     if verbose:
@@ -194,6 +313,17 @@ def cli(
         build_watcher_namespace,
         thoth_api_host,
     )
+
+    # All the images to be processed are submitted onto this queue by producers.
+    manager = Manager()
+    queue = manager.Queue()
+
+    if analyze_existing:
+        # We do this in a standalone process, but reuse worker queue to process images.
+        existing_producer = Process(
+            target=_existing_producer, args=(queue, build_watcher_namespace)
+        )
+        existing_producer.start()
 
     configuration.explicit_host = thoth_api_host
     configuration.tls_verify = not no_tls_verify
@@ -206,48 +336,26 @@ def cli(
             )
         registry_password = openshift.token
 
-    queue = Queue()
-    producer = Process(target=event_producer, args=(queue, build_watcher_namespace))
+    producer = Process(target=_event_producer, args=(queue, build_watcher_namespace))
     producer.start()
 
-    while producer.is_alive():
-        event_name, output_reference = queue.get()
-        _LOGGER.info("Handling %r", event_name)
+    args = [queue, push_registry, registry_user, registry_password, no_registry_tls_verify]
+    # We do not use multiprocessing's Pool here as we manage lifecycle of workers on our own. If any fails, give
+    # up and report errors.
+    process_pool = []
+    _LOGGER.info("Starting worker processes, number of workers is set to: %d", workers_count)
+    for worker in range(workers_count):
+        p = Process(target=_submitter, args=args)
+        p.start()
+        _LOGGER.info("Started a new worker with PID: %d", p.pid)
+        process_pool.append(p)
 
-        try:
-            if push_registry:
-                _LOGGER.info("Pushing image %r to an external push registry %r", output_reference, push_registry)
-                output_reference = push_image(
-                    output_reference,
-                    push_registry,
-                    registry_user,
-                    registry_password,
-                    src_verify_tls=not no_registry_tls_verify,
-                    dst_verify_tls=not no_registry_tls_verify
-                )
-                _LOGGER.info("Successfully pushed image to %r", output_reference)
+    # Check if all the processes is still alive.
+    while True:
+        if any(not process.is_alive() for process in process_pool):
+            raise RuntimeError("One of the processes failed")
 
-            analysis_id = image_analysis(
-                image=output_reference,
-                registry_user=registry_user,
-                registry_password=registry_password,
-                verify_tls=not no_registry_tls_verify,
-                nowait=True,
-            )
-            _LOGGER.info(
-                "Successfully submitted %r (output reference %r) to Thoth for analysis; analysis id: %s",
-                event_name,
-                output_reference,
-                analysis_id,
-            )
-        except Exception as exc:
-            _LOGGER.exception(
-                "Failed to submit image %r for analysis to Thoth: %s",
-                output_reference,
-                str(exc),
-            )
-
-    producer.join()
+        time.sleep(5)
 
     # Always fail, this should be run forever.
     sys.exit(1)
