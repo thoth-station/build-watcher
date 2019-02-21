@@ -9,8 +9,8 @@
     OCP_URL: "{{ lookup('env','OCP_URL') }}"
     OCP_TOKEN: "{{ lookup('env','OCP_TOKEN') }}"
     # See deployment configuration for more info.
-    THOTH_BUILD_WATCHER_NAMESPACE:  "{{ lookup('env','THOTH_BUILD_WATCHER_NAMESPACE') }}"
-    THOTH_WATCHED_NAMESPACE:  "{{ lookup('env','THOTH_WATCHED_NAMESPACE') }}"
+    THOTH_BUILD_WATCHER_NAMESPACE: "{{ lookup('env','THOTH_BUILD_WATCHER_NAMESPACE') }}"
+    THOTH_WATCHED_NAMESPACE: "{{ lookup('env','THOTH_WATCHED_NAMESPACE') }}"
     THOTH_NO_TLS_VERIFY: "0"
     THOTH_NO_REGISTRY_TLS_VERIFY: "0"
     THOTH_USER_API_HOST: "{{ lookup('env','THOTH_USER_API_HOST') }}"
@@ -31,4 +31,3 @@
 
   roles:
     - role: build-watcher
-

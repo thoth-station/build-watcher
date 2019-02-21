@@ -1,38 +1,44 @@
 ---
-  - name: login to OpenShift using provided token
-    command: "oc login {{ OCP_URL }} --token {{ OCP_TOKEN }}"
-    changed_when: False
+- name: login to OpenShift using provided token
+  command: "oc login {{ OCP_URL }} --token {{ OCP_TOKEN }}"
+  changed_when: false
 
-  - name: "make sure to use project {{ THOTH_BUILD_WATCHER_NAMESPACE }}"
-    command: "oc project {{ THOTH_BUILD_WATCHER_NAMESPACE }}"
-    register: project_exists
-    ignore_errors: true
+- name: "make sure to use project {{ THOTH_BUILD_WATCHER_NAMESPACE }}"
+  command: "oc project {{ THOTH_BUILD_WATCHER_NAMESPACE }}"
+  register: project_exists
+  ignore_errors: true
 
-  - name: importing required s2i ImageStreamTags from upstream registries
-    shell: "oc tag --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }} docker.io/centos/python-36-centos7:latest python-36-centos7:latest"
-    ignore_errors: true
+- name: "importing required s2i ImageStreamTags from upstream registries"
+  shell: >
+    oc tag --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }} 
+    docker.io/centos/python-36-centos7:latest python-36-centos7:latest
+  ignore_errors: true
 
-  - name: create ImageStream
-    shell: "oc process --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }}  --filename=../openshift/imageStream-template.yaml | oc apply -f -"
+- name: create ImageStream
+  shell: >
+    oc process --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }}  --filename=../openshift/imageStream-template.yaml
+    | oc apply -f -
 
-  - name: create BuildConfig
-    shell: "oc process --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }}  --filename ../openshift/buildConfig-template.yaml | oc apply -f -"
+- name: create BuildConfig
+  shell: >
+    oc process --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }}  --filename ../openshift/buildConfig-template.yaml
+    | oc apply -f -
 
-  - name: create DeploymentConfig
-    shell: >
-      oc process --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }}  --filename ../openshift/deployment-template.yaml
-      -p "THOTH_WATCHED_NAMESPACE={{ THOTH_WATCHED_NAMESPACE }}"
-      -p "THOTH_NO_TLS_VERIFY={{ THOTH_NO_TLS_VERIFY }}"
-      -p "THOTH_NO_REGISTRY_TLS_VERIFY={{ THOTH_NO_REGISTRY_TLS_VERIFY }}"
-      -p "THOTH_USER_API_HOST={{ THOTH_USER_API_HOST }}"
-      -p "THAMOS_DISABLE_TLS_WARNING={{ THAMOS_DISABLE_TLS_WARNING }}"
-      -p "THOTH_PUSH_REGISTRY={{ THOTH_PUSH_REGISTRY }}"
-      -p "THOTH_ANALYZE_EXISTING={{ THOTH_ANALYZE_EXISTING }}"
-      -p "THOTH_BUILD_WATCHER_WORKERS={{ THOTH_BUILD_WATCHER_WORKERS }}"
-      -p "THOTH_PASS_TOKEN={{ THOTH_PASS_TOKEN }}"
-      -p "THOTH_SRC_REGISTRY_USER={{ THOTH_SRC_REGISTRY_USER }}"
-      -p "THOTH_SRC_REGISTRY_PASSWORD={{ THOTH_SRC_REGISTRY_PASSWORD }}"
-      -p "THOTH_DST_REGISTRY_USER={{ THOTH_DST_REGISTRY_USER }}"
-      -p "THOTH_DST_REGISTRY_PASSWORD={{ THOTH_DST_REGISTRY_PASSWORD }}"
-      -p "PROMETHEUS_PUSHGATEWAY_HOST={{ PROMETHEUS_PUSHGATEWAY_HOST }}"
-      -p "PROMETHEUS_PUSHGATEWAY_PORT={{ PROMETHEUS_PUSHGATEWAY_PORT }}" | oc apply -f -
+- name: create DeploymentConfig
+  shell: >
+    oc process --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }}  --filename ../openshift/deployment-template.yaml
+    -p "THOTH_WATCHED_NAMESPACE={{ THOTH_WATCHED_NAMESPACE }}"
+    -p "THOTH_NO_TLS_VERIFY={{ THOTH_NO_TLS_VERIFY }}"
+    -p "THOTH_NO_REGISTRY_TLS_VERIFY={{ THOTH_NO_REGISTRY_TLS_VERIFY }}"
+    -p "THOTH_USER_API_HOST={{ THOTH_USER_API_HOST }}"
+    -p "THAMOS_DISABLE_TLS_WARNING={{ THAMOS_DISABLE_TLS_WARNING }}"
+    -p "THOTH_PUSH_REGISTRY={{ THOTH_PUSH_REGISTRY }}"
+    -p "THOTH_ANALYZE_EXISTING={{ THOTH_ANALYZE_EXISTING }}"
+    -p "THOTH_BUILD_WATCHER_WORKERS={{ THOTH_BUILD_WATCHER_WORKERS }}"
+    -p "THOTH_PASS_TOKEN={{ THOTH_PASS_TOKEN }}"
+    -p "THOTH_SRC_REGISTRY_USER={{ THOTH_SRC_REGISTRY_USER }}"
+    -p "THOTH_SRC_REGISTRY_PASSWORD={{ THOTH_SRC_REGISTRY_PASSWORD }}"
+    -p "THOTH_DST_REGISTRY_USER={{ THOTH_DST_REGISTRY_USER }}"
+    -p "THOTH_DST_REGISTRY_PASSWORD={{ THOTH_DST_REGISTRY_PASSWORD }}"
+    -p "PROMETHEUS_PUSHGATEWAY_HOST={{ PROMETHEUS_PUSHGATEWAY_HOST }}"
+    -p "PROMETHEUS_PUSHGATEWAY_PORT={{ PROMETHEUS_PUSHGATEWAY_PORT }}" | oc apply -f -
