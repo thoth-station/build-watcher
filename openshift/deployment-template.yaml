@@ -39,11 +39,6 @@ parameters:
     displayName: No TLS verify for Container registry
     value: "0"
 
-  - name: SERVICE_ACCOUNT
-    description: Name of service account for bot - should have view permissions on watched namespace.
-    displayName: Build watcher service account
-    value: "analyzer"
-
   - name: THOTH_USER_API_HOST
     description: Host to Thoth's User API where images should be submitted for analysis.
     displayName: Thoth User API host
@@ -90,6 +85,21 @@ parameters:
     displayName: Destination registry password.
     required: false
 
+  - name: THOTH_PASS_TOKEN
+    description: Pass token from service account when communicating with registry.
+    displayName: Pass token from service account
+    value: "0"
+
+  - name: PROMETHEUS_PUSHGATEWAY_HOST
+    description: Prometheus push gateway host to send metrics to.
+    displayName: Prometheus push gateway host
+    required: false
+
+  - name: PROMETHEUS_PUSHGATEWAY_PORT
+    description: Prometheus push gateway port to send metrics to.
+    displayName: Prometheus push gateway port
+    required: false
+
 objects:
   - kind: DeploymentConfig
     apiVersion: v1
@@ -106,7 +116,7 @@ objects:
             app: thoth
             component: build-watcher
         spec:
-          serviceAccountName: "${SERVICE_ACCOUNT}"
+          serviceAccountName: "build-watcher-${THOTH_WATCHED_NAMESPACE}"
           containers:
             - name: build-watcher
               env:
@@ -133,7 +143,7 @@ objects:
                   # If you watch for in-cluster builds, keep pass-token and have view rights assigned in
                   # service account.
                 - name: THOTH_PASS_TOKEN
-                  value: "1"
+                  value: "${THOTH_PASS_TOKEN}"
                   # If you would like to analyze images pushed to external registry (transparent to build-watcher),
                   # provide credentials:
                 - name: THOTH_SRC_REGISTRY_USER
@@ -162,6 +172,11 @@ objects:
                     secretKeyRef:
                       name: thoth
                       key: sentry-dsn
+
+                - name: PROMETHEUS_PUSHGATEWAY_HOST
+                  value: "${PROMETHEUS_PUSHGATEWAY_HOST}"
+                - name: PROMETHEUS_PUSHGATEWAY_PORT
+                  value: "${PROMETHEUS_PUSHGATEWAY_PORT}"
               resources:
                 requests:
                   memory: "384Mi"
