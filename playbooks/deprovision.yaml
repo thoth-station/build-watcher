@@ -12,4 +12,4 @@
     - name: "Deprovision build-watcher"
       command: >
         oc --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }}
-        delete bc,dc,is,role,rolebinding,secret,sa,template,clusterrole --selector 'component=build-watcher'
+        delete bc,dc,is,role,rolebinding,secret,sa,template,clusterrole,build,pod --selector 'component=build-watcher'

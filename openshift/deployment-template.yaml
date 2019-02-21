@@ -101,6 +101,31 @@ parameters:
     required: false
 
 objects:
+  - kind: RoleBinding
+    apiVersion: v1
+    metadata:
+      name: "build-watcher-${THOTH_WATCHED_NAMESPACE}"
+      labels:
+        app: thoth
+        component: build-watcher
+    roleRef:
+      kind: ClusterRole
+      name: edit
+    subjects:
+      - kind: ServiceAccount
+        name: "build-watcher-${THOTH_WATCHED_NAMESPACE}"
+        namespace: "${THOTH_WATCHED_NAMESPACE}"
+
+  - kind: ServiceAccount
+    apiVersion: v1
+    metadata:
+      name: "build-watcher-${THOTH_WATCHED_NAMESPACE}"
+      namespace: "${THOTH_WATCHED_NAMESPACE}"
+      labels:
+        app: thoth
+        component: build-watcher
+    automountServiceAccountToken: true
+
   - kind: DeploymentConfig
     apiVersion: v1
     metadata:
