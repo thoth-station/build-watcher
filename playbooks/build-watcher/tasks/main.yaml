@@ -10,7 +10,7 @@
 
 - name: "importing required s2i ImageStreamTags from upstream registries"
   shell: >
-    oc tag --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }} 
+    oc tag --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }}
     docker.io/centos/python-36-centos7:latest python-36-centos7:latest
   ignore_errors: true
 
