@@ -29,6 +29,11 @@ parameters:
     required: true
     name: THOTH_WATCHED_NAMESPACE
 
+  - name: THOTH_ENVIRONMENT_TYPE
+    description: Type of images (runtime or buildtime) sent to image analysis to Thoth.
+    displayName: Environment type
+    required: true
+
   - name: THOTH_NO_TLS_VERIFY
     description: Do not perform TLS verification when communicating with Thoth User API.
     displayName: No TLS verify for User API
@@ -151,6 +156,8 @@ objects:
                   value: "0"
                 - name: THOTH_WATCHED_NAMESPACE
                   value: "${THOTH_WATCHED_NAMESPACE}"
+                - name: THOTH_ENVIRONMENT_TYPE
+                  value: "${THOTH_ENVIRONMENT_TYPE}"
                 - name: THOTH_PUSH_REGISTRY
                   value: "${THOTH_PUSH_REGISTRY}"
                 - name: THOTH_LOG_BUILD_WATCHER
