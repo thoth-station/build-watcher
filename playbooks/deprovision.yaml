@@ -1,0 +1,15 @@
+---
+- name: "Playbook to deprovision build-watcher"
+
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - fail: msg="Bailing out. this play requires 'THOTH_BUILD_WATCHER_NAMESPACE'"
+      when: THOTH_BUILD_WATCHER_NAMESPACE is not defined
+
+    - name: "Deprovision build-watcher"
+      command: >
+        oc --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }}
+        delete bc,dc,is,role,rolebinding,secret,sa,template,clusterrole,build,pod --selector 'component=build-watcher'

@@ -1,0 +1,33 @@
+---
+- name: "Playbook to provision Thoth's build-watcher"
+
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    OCP_URL: "{{ lookup('env','OCP_URL') }}"
+    OCP_TOKEN: "{{ lookup('env','OCP_TOKEN') }}"
+    # See deployment configuration for more info.
+    THOTH_BUILD_WATCHER_NAMESPACE: "{{ lookup('env','THOTH_BUILD_WATCHER_NAMESPACE') }}"
+    THOTH_WATCHED_NAMESPACE: "{{ lookup('env','THOTH_WATCHED_NAMESPACE') }}"
+    THOTH_NO_TLS_VERIFY: "0"
+    THOTH_NO_REGISTRY_TLS_VERIFY: "0"
+    THOTH_USER_API_HOST: "{{ lookup('env','THOTH_USER_API_HOST') }}"
+    THAMOS_DISABLE_TLS_WARNING: "0"
+    # e.g. quay.io/repository/YOURORG/
+    THOTH_PUSH_REGISTRY: "{{ lookup('env','THOTH_PUSH_REGISTRY') }}"
+    THOTH_ANALYZE_EXISTING: "0"
+    THOTH_BUILD_WATCHER_WORKERS: "1"
+    # Listen by default on the in-cluster registry.
+    THOTH_PASS_TOKEN: "1"
+    # Or provide credentials to registry:
+    THOTH_SRC_REGISTRY_USER:
+    THOTH_SRC_REGISTRY_PASSWORD:
+    THOTH_DST_REGISTRY_USER:
+    THOTH_DST_REGISTRY_PASSWORD:
+    PROMETHEUS_PUSHGATEWAY_HOST: "{{ lookup('env','PROMETHEUS_PUSHGATEWAY_HOST') }}"
+    PROMETHEUS_PUSHGATEWAY_PORT: "{{ lookup('env','PROMETHEUS_PUSHGATEWAY_PORT') }}"
+
+  roles:
+    - role: build-watcher
