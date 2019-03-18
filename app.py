@@ -82,6 +82,7 @@ def _do_analyze_image(
     output_reference: str,
     push_registry: str = None,
     *,
+    environment_type: str = None,
     src_registry_user: str = None,
     src_registry_password: str = None,
     dst_registry_user: str = None,
@@ -105,6 +106,7 @@ def _do_analyze_image(
 
     analysis_id = image_analysis(
         image=output_reference,
+        environment_type=environment_type,
         registry_user=dst_registry_user,
         registry_password=dst_registry_password,
         verify_tls=dst_verify_tls,
@@ -168,6 +170,7 @@ def _push_image(
 def _submitter(
     queue: Queue,
     push_registry: str,
+    environment_type: str,
     src_registry_user: str = None,
     src_registry_password: str = None,
     dst_registry_user: str = None,
@@ -183,6 +186,7 @@ def _submitter(
             _do_analyze_image(
                 output_reference,
                 push_registry,
+                environment_type=environment_type,
                 src_registry_user=src_registry_user,
                 src_registry_password=src_registry_password,
                 dst_registry_user=dst_registry_user,
@@ -292,6 +296,15 @@ def _submitter(
     envvar="THOTH_BUILD_WATCHER_WORKERS",
     help="Number of worker processes to submit image analysis in parallel.",
 )
+@click.option(
+    "--environment-type",
+    required=False,
+    type=click.Choice(["runtime", "buildtime"]),
+    default="runtime",
+    show_default=True,
+    envvar="THOTH_ENVIRONMENT_TYPE",
+    help="Type of environment - type of images - runtime or buildtime analyzed in the namespace.",
+)
 def cli(
     build_watcher_namespace: str,
     thoth_api_host: str = None,
@@ -306,6 +319,7 @@ def cli(
     push_registry: str = None,
     analyze_existing: bool = None,
     workers_count: int = None,
+    environment_type: str = None,
 ):
     """Build watcher bot for analyzing image builds done in cluster."""
     if verbose:
@@ -352,6 +366,7 @@ def cli(
     args = [
         queue,
         push_registry,
+        environment_type,
         src_registry_user,
         src_registry_password,
         dst_registry_user,
