@@ -377,7 +377,7 @@ def cli(
     # up and report errors.
     process_pool = []
     _LOGGER.info(
-        "Starting worker processes, number of workers is set to: %d, environment type of images submitted is ",
+        "Starting worker processes, number of workers is set to: %d, environment type of images submitted is %s",
         workers_count, environment_type
     )
     for worker in range(workers_count):
