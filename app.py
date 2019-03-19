@@ -376,7 +376,10 @@ def cli(
     # We do not use multiprocessing's Pool here as we manage lifecycle of workers on our own. If any fails, give
     # up and report errors.
     process_pool = []
-    _LOGGER.info("Starting worker processes, number of workers is set to: %d", workers_count)
+    _LOGGER.info(
+        "Starting worker processes, number of workers is set to: %d, environment type of images submitted is ",
+        workers_count, environment_type
+    )
     for worker in range(workers_count):
         p = Process(target=_submitter, args=args)
         p.start()
