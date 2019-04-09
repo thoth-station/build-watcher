@@ -3,7 +3,6 @@
       jobs:
         - "thoth-coala"
     gate:
-      queue: "thoth-station/core"
       jobs:
         - "thoth-coala"
     post:
@@ -12,6 +11,5 @@
             vars:
               webhook_url: "https://paas.upshift.redhat.com/oapi/v1/namespaces/thoth-test-core/buildconfigs/build-watcher"
     kebechet-auto-gate:
-      queue: "thoth-station/core"
       jobs:
         - "thoth-coala"
