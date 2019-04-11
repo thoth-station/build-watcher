@@ -105,6 +105,11 @@ parameters:
     displayName: Prometheus push gateway port
     required: false
 
+  - name: THOTH_INFRA_NAMESPACE
+    description: Namespace on which Build Watcher image is build.
+    displayName: Thoth infra namespace
+    required: true
+
 objects:
   - kind: RoleBinding
     apiVersion: v1
@@ -227,3 +232,4 @@ objects:
             from:
               kind: ImageStreamTag
               name: 'build-watcher:${IMAGE_STREAM_TAG}'
+              namespace: '${THOTH_INFRA_NAMESPACE}'

@@ -13,6 +13,7 @@
     # Environment can be runtime or buildtime.
     THOTH_ENVIRONMENT_TYPE: "runtime"
     THOTH_WATCHED_NAMESPACE: "{{ lookup('env','THOTH_WATCHED_NAMESPACE') }}"
+    THOTH_INFRA_NAMESPACE: "{{ lookup('env','THOTH_INFRA_NAMESPACE') }}"
     THOTH_NO_TLS_VERIFY: "0"
     THOTH_NO_REGISTRY_TLS_VERIFY: "0"
     THOTH_USER_API_HOST: "{{ lookup('env','THOTH_USER_API_HOST') }}"
