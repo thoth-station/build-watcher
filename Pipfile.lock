@@ -30,13 +30,6 @@
             ],
             "version": "==0.24.0"
         },
-        "attr": {
-            "hashes": [
-                "sha256:0b1aaddb85bd9e9c4bd75092f4440d6616ff40b0df0437f00771871670f7c9fd",
-                "sha256:9091548058d17f132596e61fa7518e504f76b9a4c61ca7d86e1f96dbf7d4775d"
-            ],
-            "version": "==0.3.1"
-        },
         "attrs": {
             "hashes": [
                 "sha256:69c0dbf2ed392de1cb5ec704444b08a5ef81680a61cb899dc08127123af36a79",
@@ -178,9 +171,9 @@
         },
         "invectio": {
             "hashes": [
-                "sha256:de052bd23224c6ad8470103b9db7fb5a5944ba4e0e537efb4d6b1637a644f1e7"
+                "sha256:a21e591ebba63e27959ae6491b787e6567554db318e785f8ecd65c23465c323d"
             ],
-            "version": "==0.0.2"
+            "version": "==0.0.3"
         },
         "iso8601": {
             "hashes": [
@@ -413,10 +406,10 @@
         },
         "thamos": {
             "hashes": [
-                "sha256:b068470d5c8c54d398a90354bc2a12d8df52d40907fe072b712982a8520c6a47"
+                "sha256:613d02be91575242c294656c7024817ee93ee877a70e317230d18932c44c306d"
             ],
             "index": "pypi",
-            "version": "==0.4.2"
+            "version": "==0.4.3"
         },
         "thoth-analyzer": {
             "hashes": [
