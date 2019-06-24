@@ -406,10 +406,11 @@
         },
         "thamos": {
             "hashes": [
-                "sha256:613d02be91575242c294656c7024817ee93ee877a70e317230d18932c44c306d"
+                "sha256:000d1c4a6d26ca951e8528168b060b0774e0378acb18a0bc210eb5f6eb24295b",
+                "sha256:b4113019fd2b6817d8282eb588934b7c0af7a4d387fa8347c1b299a46d805273"
             ],
             "index": "pypi",
-            "version": "==0.4.3"
+            "version": "==0.5.3"
         },
         "thoth-analyzer": {
             "hashes": [
