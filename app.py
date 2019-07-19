@@ -33,13 +33,35 @@ from thoth.common import init_logging
 from thoth.common import OpenShift
 from thoth.analyzer import run_command
 
+from prometheus_client import CollectorRegistry, Gauge, Counter, push_to_gateway
 
 init_logging()
+prometheus_registry = CollectorRegistry()
 
 _LOGGER = logging.getLogger("thoth.build_watcher")
 
 _HERE_DIR = os.path.dirname(os.path.abspath(__file__))
 _SKOPEO_EXEC_PATH = os.getenv("SKOPEO_EXEC_PATH", os.path.join(_HERE_DIR, "bin", "skopeo"))
+_THOTH_METRICS_PUSHGATEWAY_URL = os.getenv("PROMETHEUS_PUSHGATEWAY_HOST")
+
+_METRIC_IMAGES_SUBMITTED = Counter(
+    "build_watcher_image_submission_total", "Number of images submitted for analysis.", [], registry=prometheus_registry
+)
+_METRIC_IMAGES_PUSHED_REGISTRY = Counter(
+    "build_watcher_image_pushed_registry_total",
+    "Number of images push to external registry.",
+    [],
+    registry=prometheus_registry,
+)
+_METRIC_BUILD_LOGS_SUBMITTED = Counter(
+    "build_watcher_build_log_submission_total",
+    "Number of build logs submitted for analysis.",
+    [],
+    registry=prometheus_registry,
+)
+_METRIC_BUILDS_FAILED = Counter(
+    "build_watcher_builds_failed_total", "Number of builds failed.", [], registry=prometheus_registry
+)
 
 
 def _buildlog_metadata(api_endpoint: str, build_log: str):
@@ -56,7 +78,13 @@ def _existing_producer(queue: Queue, build_watcher_namespace: str):
         _LOGGER.debug("Listing tags available for %r", item["metadata"]["name"])
         for tag_info in item.status.tags or []:
             output_reference = f"{item.status.dockerImageRepository}:{tag_info.tag}"
+            _METRIC_IMAGES_SUBMITTED.inc()
             _LOGGER.info("Queueing already existing image %r for analysis", output_reference)
+            try:
+                _LOGGER.info(f"Submitting metrics to Prometheus pushgateway {_THOTH_METRICS_PUSHGATEWAY_URL}")
+                push_to_gateway(_THOTH_METRICS_PUSHGATEWAY_URL, job="build-watcher", registry=prometheus_registry)
+            except Exception as e:
+                _LOGGER.exception(f"An error occurred pushing the metrics: {str(e)}")
             queue.put(output_reference)
 
     _LOGGER.info("Queuing existing images for analyses has finished, all of them were scheduled for analysis")
@@ -104,6 +132,8 @@ def _event_producer(queue: Queue, build_watcher_namespace: str):
             strategy = event["object"].spec.strategy
             build_reference = _get_build(openshift, strategy, build_reference, event["object"].metadata)
             _LOGGER.info("Queueing build log based on build event %r for further processing", event_name)
+            _METRIC_IMAGES_SUBMITTED.inc()
+            _METRIC_BUILDS_FAILED.inc()
             queue.put(build_reference)
             continue
 
@@ -111,7 +141,14 @@ def _event_producer(queue: Queue, build_watcher_namespace: str):
         build_reference["output_reference"] = event["object"].status.outputDockerImageReference
         strategy = event["object"].spec.strategy
         build_reference = _get_build(openshift, strategy, build_reference, event["object"].metadata)
+        _METRIC_IMAGES_SUBMITTED.inc(2)
+        _METRIC_BUILD_LOGS_SUBMITTED.inc()
         _LOGGER.info("Queueing build log based on build event %r for further processing", event_name)
+        try:
+            _LOGGER.info(f"Submitting metrics to Prometheus pushgateway {_THOTH_METRICS_PUSHGATEWAY_URL}")
+            push_to_gateway(_THOTH_METRICS_PUSHGATEWAY_URL, job="build-watcher", registry=prometheus_registry)
+        except Exception as e:
+            _LOGGER.exception(f"An error occurred pushing the metrics: {str(e)}")
         queue.put(build_reference)
 
 
@@ -141,6 +178,7 @@ def _do_analyze_build(
             src_verify_tls=src_verify_tls,
             dst_verify_tls=dst_verify_tls,
         )
+        _METRIC_IMAGES_PUSHED_REGISTRY.inc()
         _LOGGER.info("Successfully pushed image to %r", output_reference)
 
     build_detail = {"base_image": base_input_reference, "output_image": output_reference}

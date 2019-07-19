@@ -194,26 +194,22 @@ objects:
                 # Set to a non-zero value to suppres annoying TLS warnings by Thamos lib:
                 - name: THAMOS_DISABLE_TLS_WARNING
                   value: "${THAMOS_DISABLE_TLS_WARNING}"
-                # - name: PROMETHEUS_PUSHGATEWAY_HOST
-                #   valueFrom:
-                #     configMapKeyRef:
-                #       key: prometheus-pushgateway-host
-                #       name: thoth
-                # - name: PROMETHEUS_PUSHGATEWAY_PORT
-                #   valueFrom:
-                #     configMapKeyRef:
-                #       name: thoth
-                #       key: prometheus-pushgateway-port
+                - name: PROMETHEUS_PUSHGATEWAY_HOST
+                  valueFrom:
+                    configMapKeyRef:
+                      key: prometheus-pushgateway-host
+                      name: thoth
+                - name: PROMETHEUS_PUSHGATEWAY_PORT
+                  valueFrom:
+                    configMapKeyRef:
+                      name: thoth
+                      key: prometheus-pushgateway-port
                 - name: SENTRY_DSN
                   valueFrom:
                     secretKeyRef:
                       name: thoth
                       key: sentry-dsn
 
-                - name: PROMETHEUS_PUSHGATEWAY_HOST
-                  value: "${PROMETHEUS_PUSHGATEWAY_HOST}"
-                - name: PROMETHEUS_PUSHGATEWAY_PORT
-                  value: "${PROMETHEUS_PUSHGATEWAY_PORT}"
               resources:
                 requests:
                   memory: "384Mi"
