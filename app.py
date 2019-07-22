@@ -64,12 +64,15 @@ _METRIC_BUILDS_FAILED = Counter(
 )
 
 
-def _buildlog_metadata(api_endpoint: str, build_log: str):
+def _buildlog_metadata(api_endpoint: str = None, build_log: str = None) -> dict:
     """Gather metadata for the build log."""
+    # Update the metadata with more details
+    if not build_log:
+        return {}
     return {"apiversion": api_endpoint, "kind": "BuildLog", "log": build_log, "metadata": "string"}
 
 
-def _existing_producer(queue: Queue, build_watcher_namespace: str):
+def _existing_producer(queue: Queue, build_watcher_namespace: str) -> None:
     """Query for existing images in image streams and queue them for analysis."""
     openshift = OpenShift()
     v1_imagestreams = openshift.ocp_client.resources.get(api_version="image.openshift.io/v1", kind="ImageStream")
@@ -78,13 +81,7 @@ def _existing_producer(queue: Queue, build_watcher_namespace: str):
         _LOGGER.debug("Listing tags available for %r", item["metadata"]["name"])
         for tag_info in item.status.tags or []:
             output_reference = f"{item.status.dockerImageRepository}:{tag_info.tag}"
-            _METRIC_IMAGES_SUBMITTED.inc()
             _LOGGER.info("Queueing already existing image %r for analysis", output_reference)
-            try:
-                _LOGGER.info(f"Submitting metrics to Prometheus pushgateway {_THOTH_METRICS_PUSHGATEWAY_URL}")
-                push_to_gateway(_THOTH_METRICS_PUSHGATEWAY_URL, job="build-watcher", registry=prometheus_registry)
-            except Exception as e:
-                _LOGGER.exception(f"An error occurred pushing the metrics: {str(e)}")
             queue.put(output_reference)
 
     _LOGGER.info("Queuing existing images for analyses has finished, all of them were scheduled for analysis")
@@ -93,31 +90,35 @@ def _existing_producer(queue: Queue, build_watcher_namespace: str):
 def _get_build(openshift, strategy: dict, build_reference: dict, event_metadata: dict) -> dict:
     """Gather Build log and Base Image based upon the strategy of the build."""
     if strategy.get("sourceStrategy"):
-        build_reference["base_input_reference"] = strategy.get("sourceStrategy", {}).get("from", {}).get("name", "")
+        build_reference["base_input_reference"] = strategy.get("sourceStrategy", {}).get("from", {}).get("name", None)
     elif strategy.get("dockerStrategy") and strategy.get("dockerStrategy", {}).get("from", {}):
-        build_reference["base_input_reference"] = strategy.get("dockerStrategy", {}).get("from", {}).get("name", "")
+        build_reference["base_input_reference"] = strategy.get("dockerStrategy", {}).get("from", {}).get("name", None)
     else:
-        build_reference["base_input_reference"] = ""
+        build_reference["base_input_reference"] = None
     try:
         build_log = openshift.get_build_log(
             build_id=event_metadata.get("name"), namespace=event_metadata.get("namespace")
         )
     except Exception as exc:
         _LOGGER.exception("Failed to get the log for build %s: %s", event_metadata.get("name"), str(exc))
-        build_log = ""
+        build_log = None
     build_reference["build_log_reference"] = _buildlog_metadata(event_metadata.get("selfLink"), build_log)
 
     return build_reference
 
 
-def _event_producer(queue: Queue, build_watcher_namespace: str):
+def _event_producer(queue: Queue, build_watcher_namespace: str) -> None:
     """Accept events from the cluster and queue them into work queue processed by the main process."""
     _LOGGER.info("Starting event producer")
     openshift = OpenShift()
     v1_build = openshift.ocp_client.resources.get(api_version="v1", kind="Build")
     for event in v1_build.watch(namespace=build_watcher_namespace):
         event_name = event["object"].metadata.name
-        build_reference = {"build_log_reference": None, "base_input_reference": None, "output_reference": None}
+        build_reference = {
+            "build_log_reference": _buildlog_metadata(),
+            "base_input_reference": None,
+            "output_reference": None,
+        }
         if event["object"].status.phase != "Complete":
             _LOGGER.debug(
                 "Ignoring build event for %r - not completed phase %r", event_name, event["object"].status.phase
@@ -132,8 +133,12 @@ def _event_producer(queue: Queue, build_watcher_namespace: str):
             strategy = event["object"].spec.strategy
             build_reference = _get_build(openshift, strategy, build_reference, event["object"].metadata)
             _LOGGER.info("Queueing build log based on build event %r for further processing", event_name)
-            _METRIC_IMAGES_SUBMITTED.inc()
             _METRIC_BUILDS_FAILED.inc()
+            try:
+                _LOGGER.info("Submitting metrics to Prometheus pushgateway %r", _THOTH_METRICS_PUSHGATEWAY_URL)
+                push_to_gateway(_THOTH_METRICS_PUSHGATEWAY_URL, job="build-watcher", registry=prometheus_registry)
+            except Exception as e:
+                _LOGGER.exception(f"An error occurred pushing the metrics: {str(e)}")
             queue.put(build_reference)
             continue
 
@@ -141,14 +146,7 @@ def _event_producer(queue: Queue, build_watcher_namespace: str):
         build_reference["output_reference"] = event["object"].status.outputDockerImageReference
         strategy = event["object"].spec.strategy
         build_reference = _get_build(openshift, strategy, build_reference, event["object"].metadata)
-        _METRIC_IMAGES_SUBMITTED.inc(2)
-        _METRIC_BUILD_LOGS_SUBMITTED.inc()
         _LOGGER.info("Queueing build log based on build event %r for further processing", event_name)
-        try:
-            _LOGGER.info(f"Submitting metrics to Prometheus pushgateway {_THOTH_METRICS_PUSHGATEWAY_URL}")
-            push_to_gateway(_THOTH_METRICS_PUSHGATEWAY_URL, job="build-watcher", registry=prometheus_registry)
-        except Exception as e:
-            _LOGGER.exception(f"An error occurred pushing the metrics: {str(e)}")
         queue.put(build_reference)
 
 
@@ -165,7 +163,7 @@ def _do_analyze_build(
     dst_registry_password: str = None,
     src_verify_tls: bool = True,
     dst_verify_tls: bool = True,
-):
+) -> None:
     if push_registry:
         _LOGGER.info("Pushing image %r to an external push registry %r", output_reference, push_registry)
         output_reference = _push_image(
@@ -181,11 +179,10 @@ def _do_analyze_build(
         _METRIC_IMAGES_PUSHED_REGISTRY.inc()
         _LOGGER.info("Successfully pushed image to %r", output_reference)
 
-    build_detail = {"base_image": base_input_reference, "output_image": output_reference}
-    build_detail.update(build_log_reference)
-
-    analysis_ids = build_analysis(
-        build_detail=build_detail,
+    analysis_response = build_analysis(
+        base_image=base_input_reference,
+        output_image=output_reference,
+        build_log=build_log_reference,
         environment_type=environment_type,
         registry_user=dst_registry_user,
         registry_password=dst_registry_password,
@@ -193,14 +190,28 @@ def _do_analyze_build(
         nowait=True,
     )
 
+    if analysis_response.base_image_analysis.analysis_id:
+        _METRIC_IMAGES_SUBMITTED.inc()
+    if analysis_response.build_log_analysis.analysis_id:
+        _METRIC_BUILD_LOGS_SUBMITTED.inc()
+    if analysis_response.output_image_analysis.analysis_id:
+        _METRIC_IMAGES_SUBMITTED.inc()
+
+    try:
+        _LOGGER.info("Submitting metrics to Prometheus pushgateway %r", _THOTH_METRICS_PUSHGATEWAY_URL)
+        push_to_gateway(_THOTH_METRICS_PUSHGATEWAY_URL, job="build-watcher", registry=prometheus_registry)
+    except Exception as e:
+        _LOGGER.exception(f"An error occurred pushing the metrics: {str(e)}")
+
     _LOGGER.info(
-        "Successfully submitted %s,%s,%s to Thoth for analysis",
+        "Successfully submitted %r, %r, %r to Thoth for analysis; analysis ids respectively: %r, %r, %r",
         output_reference,
         base_input_reference,
         build_log_reference,
+        analysis_response.output_image_analysis.analysis_id,
+        analysis_response.base_image_analysis.analysis_id,
+        analysis_response.build_log_analysis.analysis_id,
     )
-
-    return
 
 
 def _push_image(
@@ -266,13 +277,13 @@ def _submitter(
     while True:
         reference = queue.get()
         if isinstance(reference, dict):
-            build_log_reference = reference.get("build_log_reference", None)
+            build_log_reference = reference.get("build_log_reference", _buildlog_metadata())
             base_input_reference = reference.get("base_input_reference", None)
             output_reference = reference.get("output_reference", None)
         else:
             output_reference = reference
-            build_log_reference = ""
-            base_input_reference = ""
+            build_log_reference = _buildlog_metadata()
+            base_input_reference = None
         _LOGGER.info("Handling analysis of image %r", reference)
 
         try:
@@ -450,7 +461,7 @@ def cli(
 
         if not push_registry and (not dst_registry_user and not dst_registry_password):
             # We do not copy from source, use the source creds for Thoth's analysis.
-            dst_registry_user, dst_registry_password = src_registry_user, src_registry_password
+            dst_registry_user, dst_registry_password = (src_registry_user, src_registry_password)
         elif not dst_registry_user and not dst_registry_password:
             # Reuse credentials if we are in the cluster.
             dst_registry_user = "build-watcher"
