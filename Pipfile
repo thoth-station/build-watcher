@@ -10,6 +10,7 @@ thoth-common = {extras = ["openshift"],version = "*"}
 click = "*"
 pyyaml = "*"
 thamos = "*"
+prometheus-client = "*"
 thoth-analyzer = "*"
 
 [requires]
