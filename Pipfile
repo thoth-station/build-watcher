@@ -6,7 +6,7 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-thoth-common = {extras = ["openshift"],version = "*"}
+thoth-common = "*"
 click = "*"
 pyyaml = "*"
 thamos = "*"
