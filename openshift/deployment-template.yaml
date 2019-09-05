@@ -39,8 +39,13 @@ parameters:
     displayName: No TLS verify for User API
     value: "0"
 
-  - name: THOTH_NO_REGISTRY_TLS_VERIFY
-    description: Do not perform TLS verification when communicating with Container Image registry.
+  - name: THOTH_NO_SOURCE_REGISTRY_TLS_VERIFY
+    description: Do not perform TLS verification when pulling images on Thoth side.
+    displayName: No TLS verify for Container registry
+    value: "0"
+
+  - name: THOTH_NO_DESTINATION_REGISTRY_TLS_VERIFY
+    description: Do not perform TLS verification when pushing to a remote push registry..
     displayName: No TLS verify for Container registry
     value: "0"
 
@@ -175,8 +180,10 @@ objects:
                   value: "${THOTH_ANALYZE_EXISTING}"
                 - name: THOTH_BUILD_WATCHER_WORKERS
                   value: "${THOTH_BUILD_WATCHER_WORKERS}"
-                - name: THOTH_NO_REGISTRY_TLS_VERIFY
-                  value: "${THOTH_NO_REGISTRY_TLS_VERIFY}"
+                - name: THOTH_NO_SOURCE_REGISTRY_TLS_VERIFY
+                  value: "${THOTH_NO_SOURCE_REGISTRY_TLS_VERIFY}"
+                - name: THOTH_NO_DESTINATION_REGISTRY_TLS_VERIFY
+                  value: "${THOTH_NO_DESTINATION_REGISTRY_TLS_VERIFY}"
                   # If you watch for in-cluster builds, keep pass-token and have view rights assigned in
                   # service account.
                 - name: THOTH_PASS_TOKEN
