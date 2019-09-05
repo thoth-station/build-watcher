@@ -99,13 +99,6 @@
             "index": "pypi",
             "version": "==7.0"
         },
-        "contoml": {
-            "hashes": [
-                "sha256:2353275caef3726131c4192379252cc48eb4a15c06df3e1046f783de937eba94",
-                "sha256:f62960b57a9489187653787bd67756d15a79e4579c7d779d8b94f581dd260a7d"
-            ],
-            "version": "==0.32"
-        },
         "cryptography": {
             "hashes": [
                 "sha256:24b61e5fcb506424d3ec4e18bca995833839bf13c59fc43e530e488f28d46b8c",
@@ -175,14 +168,6 @@
                 "sha256:f7e6934cdb6d45de99ef7a4e3f839b079a9549740d68efc5fe7a4bf56439f553"
             ],
             "version": "==0.0.7"
-        },
-        "iso8601": {
-            "hashes": [
-                "sha256:210e0134677cc0d02f6028087fee1df1e1d76d372ee1db0bf30bf66c5c1c89a3",
-                "sha256:49c4b20e1f38aa5cf109ddcd39647ac419f928512c869dc01d5c7098eddede82",
-                "sha256:bbbae5fb4a7abfe71d4688fd64bff70b91bbd74ef6a99d964bab18f7fdf286dd"
-            ],
-            "version": "==0.1.12"
         },
         "jinja2": {
             "hashes": [
@@ -361,10 +346,10 @@
         },
         "ruamel.yaml": {
             "hashes": [
-                "sha256:547aeab5c51c93bc750ed2a320c1559b605bde3aa569216aa75fd91d8a1c4623",
-                "sha256:c5e239b6a4f26baabb2e22b145582a7d99ae9d4ebb8902291365a61ed38faa7f"
+                "sha256:0db639b1b2742dae666c6fc009b8d1931ef15c9276ef31c0673cc6dcf766cf40",
+                "sha256:412a6f5cfdc0525dee6a27c08f5415c7fd832a7afcb7a0ed7319628aed23d408"
             ],
-            "version": "==0.16.1"
+            "version": "==0.16.5"
         },
         "ruamel.yaml.clib": {
             "hashes": [
@@ -392,10 +377,10 @@
         },
         "sentry-sdk": {
             "hashes": [
-                "sha256:d491aa6399eaa3eded433972751a9770180730fd8b4c225b0b7f49c4fa2af70b",
-                "sha256:d68003cdffbbfcadaa2c445b72e1050b0a44406f94199866f192986c016b23f5"
+                "sha256:79e8352b5097aa06014871c6daad0933f59d1fcccc586339464ea86e4877b2ab",
+                "sha256:aeaaf6ae7cc4030d390e5c95797ac1a2a79ac2c8b687709293975ee808c68784"
             ],
-            "version": "==0.10.2"
+            "version": "==0.11.1"
         },
         "six": {
             "hashes": [
@@ -403,12 +388,6 @@
                 "sha256:d16a0141ec1a18405cd4ce8b4613101da75da0e9a7aec5bdd4fa804d0e0eba73"
             ],
             "version": "==1.12.0"
-        },
-        "strict-rfc3339": {
-            "hashes": [
-                "sha256:5cad17bedfc3af57b399db0fed32771f18fc54bbd917e85546088607ac5e1277"
-            ],
-            "version": "==0.7"
         },
         "termcolor": {
             "hashes": [
@@ -424,11 +403,11 @@
         },
         "thamos": {
             "hashes": [
-                "sha256:162752d46168862e53eeaa471c82fdc6be0b5673be2f1ee1250905e1da4af557",
-                "sha256:a0b5ebb2d820231772086ac7023b74882006f53364283c990c835c07060d802f"
+                "sha256:15ffe5cc42f30f303aeee18ba35d63dd285cc8058b0c67cb40b14ea833075f8e",
+                "sha256:ee8cc8a10f65ff8d74bde3995601fd2221c9638030650d44957c76b12824662d"
             ],
             "index": "pypi",
-            "version": "==0.7.0"
+            "version": "==0.7.2"
         },
         "thoth-analyzer": {
             "hashes": [
@@ -445,11 +424,12 @@
             "index": "pypi",
             "version": "==0.9.8"
         },
-        "timestamp": {
+        "toml": {
             "hashes": [
-                "sha256:b5c7a4539f0d8742b7d6c78febd241ab24903c73c38045690725220ca7eae4ac"
+                "sha256:229f81c57791a41d65e399fc06bf0848bab550a9dfd5ed66df18ce5f05e73d5c",
+                "sha256:235682dd292d5899d361a811df37e04a8828a5b1da3115886b73cf81ebc9100e"
             ],
-            "version": "==0.0.1"
+            "version": "==0.10.0"
         },
         "tzlocal": {
             "hashes": [

@@ -271,7 +271,8 @@ def _submitter(
     src_registry_password: str = None,
     dst_registry_user: str = None,
     dst_registry_password: str = None,
-    no_registry_tls_verify: bool = False,
+    no_src_registry_tls_verify: bool = False,
+    no_dst_registry_tls_verify: bool = False,
 ) -> None:
     """Read messages from queue and submit each message with image to Thoth for analysis."""
     while True:
@@ -297,8 +298,8 @@ def _submitter(
                 src_registry_password=src_registry_password,
                 dst_registry_user=dst_registry_user,
                 dst_registry_password=dst_registry_password,
-                src_verify_tls=not no_registry_tls_verify,
-                dst_verify_tls=not no_registry_tls_verify,
+                src_verify_tls=not no_src_registry_tls_verify,
+                dst_verify_tls=not no_dst_registry_tls_verify,
             )
         except Exception as exc:
             _LOGGER.exception("Failed to submit image %r for analysis to Thoth: %s", output_reference, str(exc))
@@ -332,12 +333,18 @@ def _submitter(
     help="Do not check for TLS certificates when communicating with Thoth.",
 )
 @click.option(
-    "--no-registry-tls-verify",
-    "-R",
+    "--no-src-registry-tls-verify",
+    "-S",
     is_flag=True,
-    envvar="THOTH_NO_REGISTRY_TLS_VERIFY",
-    help="Do not check for TLS certificates of registry when pulling images on Thoth side or "
-    "when pushing to a remote push registry.",
+    envvar="THOTH_NO_SOURCE_REGISTRY_TLS_VERIFY",
+    help="Do not check for TLS certificates of registry when pulling images on Thoth side.",
+)
+@click.option(
+    "--no-dst-registry-tls-verify",
+    "-D",
+    is_flag=True,
+    envvar="THOTH_NO_DESTINATION_REGISTRY_TLS_VERIFY",
+    help="Do not check for TLS certificates of registry when pushing to a remote push registry.",
 )
 @click.option(
     "--pass-token",
@@ -416,7 +423,8 @@ def cli(
     thoth_api_host: str = None,
     verbose: bool = False,
     no_tls_verify: bool = False,
-    no_registry_tls_verify: bool = False,
+    no_src_registry_tls_verify: bool = False,
+    no_dst_registry_tls_verify: bool = False,
     pass_token: bool = False,
     src_registry_user: str = None,
     src_registry_password: str = None,
@@ -478,7 +486,8 @@ def cli(
         src_registry_password,
         dst_registry_user,
         dst_registry_password,
-        no_registry_tls_verify,
+        no_src_registry_tls_verify,
+        no_dst_registry_tls_verify,
     ]
     # We do not use multiprocessing's Pool here as we manage lifecycle of workers on our own. If any fails, give
     # up and report errors.
