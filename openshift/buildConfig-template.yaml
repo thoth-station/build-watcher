@@ -7,13 +7,14 @@ metadata:
       This is Thoth Build Watcher BuildConfig, this template is meant to
       be used by Bots, but could also be used by humans...
     openshift.io/display-name: 'Thoth Core: Build Watcher BuildConfig'
-    version: 0.0.1
+    version: 0.1.0
     tags: thoth,build-watcher,ai-stacks,aistacks
     template.openshift.io/documentation-url: https://github.com/Thoth-Station/
     template.openshift.io/long-description: >
       This is Thoth Build Watcher BuildConfig, this template is meant to
       be used by Bots, but could also be used by humans...
     template.openshift.io/provider-display-name: Red Hat, Inc.
+    thoth-station.ninja/template-version: 0.1.0
   labels:
     template: build-watcher-buildconfig
     app: thoth
@@ -39,11 +40,19 @@ parameters:
     name: IMAGE_STREAM_TAG
     value: 'latest'
 
+  - description: Thamos Advise setup tag value
+    displayName: THOTH_ADVISE
+    required: true
+    name: THOTH_ADVISE
+    value: "1"
+
 objects:
   - apiVersion: build.openshift.io/v1
     kind: BuildConfig
     metadata:
       name: build-watcher
+      annotations:
+        thoth-station.ninja/template-version: 0.1.0
       labels:
         app: thoth
         component: build-watcher
@@ -80,7 +89,7 @@ objects:
             - name: "THOTH_DRY_RUN"
               value: "1"
             - name: "THOTH_ADVISE"
-              value: "1"
+              value: ${THOTH_ADVISE}
             - name: "THAMOS_VERBOSE"
               value: "1"
             - name: "THAMOS_DEBUG"
