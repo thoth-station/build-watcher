@@ -5,13 +5,14 @@ metadata:
   annotations:
     description: This is Thoth - Build Watcher
     openshift.io/display-name: 'Thoth Core: Build Watcher'
-    version: 0.0.1
+    version: 0.1.0
     tags: poc,thoth,build-watcher,ai-stacks,aistacks
     template.openshift.io/documentation-url: https://github.com/Thoth-Station/
     template.openshift.io/long-description: >
       This template defines resources needed to deploy Thoth Build
       Watcher on OpenShift.
     template.openshift.io/provider-display-name: Red Hat, Inc.
+    thoth-station.ninja/template-version: 0.1.0
   labels:
     template: build-watcher-deployment
     app: thoth
@@ -119,6 +120,8 @@ objects:
   - kind: RoleBinding
     apiVersion: v1
     metadata:
+      annotations:
+        thoth-station.ninja/template-version: 0.1.0
       name: "build-watcher-${THOTH_WATCHED_NAMESPACE}"
       labels:
         app: thoth
@@ -134,6 +137,8 @@ objects:
   - kind: ServiceAccount
     apiVersion: v1
     metadata:
+      annotations:
+        thoth-station.ninja/template-version: 0.1.0
       name: "build-watcher-${THOTH_WATCHED_NAMESPACE}"
       namespace: "${THOTH_WATCHED_NAMESPACE}"
       labels:
@@ -144,6 +149,8 @@ objects:
   - kind: DeploymentConfig
     apiVersion: v1
     metadata:
+      annotations:
+        thoth-station.ninja/template-version: 0.1.0
       labels:
         app: thoth
         component: build-watcher
