@@ -350,11 +350,11 @@
         },
         "thoth-analyzer": {
             "hashes": [
-                "sha256:2748dac8497c479ba7c17a82ea449082484f9222d4a385ad1e894904d85b51e3",
-                "sha256:535b6295019a16c538ba614f0fb92d258a6de6503eb626c3b9fe55554d32d648"
+                "sha256:125a089478059976a20eede8164510ad9a613f52ee4f7bff6883dce096c75bea",
+                "sha256:97d06b802ea7f1b3d4f906fdb870c9bfa5613c519032228d60f05fd504fffd25"
             ],
             "index": "pypi",
-            "version": "==0.1.4"
+            "version": "==0.1.5"
         },
         "thoth-common": {
             "hashes": [
