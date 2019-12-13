@@ -82,10 +82,10 @@
         },
         "dictdiffer": {
             "hashes": [
-                "sha256:97cf4ef98ebc1acf737074aed41e379cf48ab5ff528c92109dfb8e2e619e6809",
-                "sha256:b3ad476fc9cca60302b52c50e1839342d2092aeaba586d69cbf9249f87f52463"
+                "sha256:1adec0d67cdf6166bda96ae2934ddb5e54433998ceab63c984574d187cc563d2",
+                "sha256:d79d9a39e459fe33497c858470ca0d2e93cb96621751de06d631856adfd9c390"
             ],
-            "version": "==0.8.0"
+            "version": "==0.8.1"
         },
         "distro": {
             "hashes": [
@@ -96,10 +96,10 @@
         },
         "google-auth": {
             "hashes": [
-                "sha256:55999a44129bcdf23a9db0b9b2f6a21f7d91d84cb50623a94090029afa7fe923",
-                "sha256:624db00f5cb1c938ea3c4a8aee94b43e69f1a9deadd734ed7d27d00bf3c68ae4"
+                "sha256:bdf3af2b19368fc50ed0542b891bf64c2e92d8f207d92064a6cf1e1a1014d761",
+                "sha256:bf45ce767ac45704372a6d3677b4a036594a935f4e460e58c7accc3c36925f06"
             ],
-            "version": "==1.7.2"
+            "version": "==1.8.2"
         },
         "idna": {
             "hashes": [
@@ -178,9 +178,9 @@
         },
         "openshift": {
             "hashes": [
-                "sha256:8af7e1e1fd85af79e363b1a8a323f091764b3d9f2e9640bf32cbd11e52d4324f"
+                "sha256:ce7411a5689e6d3831bb5dc08a8c324860d71e3dd5547ba44f4d139cfa57c34b"
             ],
-            "version": "==0.10.0"
+            "version": "==0.10.1"
         },
         "pexpect": {
             "hashes": [
@@ -341,11 +341,11 @@
         },
         "thamos": {
             "hashes": [
-                "sha256:06b83431b9f4ffbece3c906c3f27f958b5edc29c161e4b7ad27ec7fb0886e4e7",
-                "sha256:2c4774d4d949e2d05894953475b4dd9fc28c7d0510cd5c3def47cdebb9fc1c56"
+                "sha256:3330e089536dccbe26fbcc950232e23d9688ebc0482793201db037cbf716373d",
+                "sha256:59352961786cbec07ae70e719def095f13bc45271b20ea75ca7dbe0d8c848a0e"
             ],
             "index": "pypi",
-            "version": "==0.7.6"
+            "version": "==0.7.7"
         },
         "thoth-analyzer": {
             "hashes": [
