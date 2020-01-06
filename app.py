@@ -204,10 +204,9 @@ def _do_analyze_build(
         _LOGGER.exception(f"An error occurred pushing the metrics: {str(e)}")
 
     _LOGGER.info(
-        "Successfully submitted %r, %r, %r to Thoth for analysis; analysis ids respectively: %r, %r, %r",
+        "Successfully submitted %r, %r, build_log, to Thoth for analysis; analysis ids respectively: %r, %r, %r",
         output_reference,
         base_input_reference,
-        build_log_reference,
         analysis_response.output_image_analysis.analysis_id,
         analysis_response.base_image_analysis.analysis_id,
         analysis_response.build_log_analysis.analysis_id,
@@ -252,7 +251,10 @@ def _push_image(
         cmd += " "
 
     image_name = image.rsplit("/", maxsplit=1)[1]
-    output = f"{push_registry}/{image_name}"
+    if "quay.io" in push_registry:
+        output = f"{push_registry}:{image_name.replace(':','-')}"
+    else:
+        output = f"{push_registry}/{image_name}"
     _LOGGER.debug("Pushing image %r from %r to registry %r, output is %r", image_name, image, push_registry, output)
     cmd += f"docker://{image} docker://{output}"
 
@@ -285,7 +287,7 @@ def _submitter(
             output_reference = reference
             build_log_reference = _buildlog_metadata()
             base_input_reference = None
-        _LOGGER.info("Handling analysis of image %r", reference)
+            _LOGGER.info("Handling analysis of image %r", reference)
 
         try:
             _do_analyze_build(
