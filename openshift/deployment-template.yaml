@@ -127,6 +127,7 @@ objects:
           serviceAccountName: "build-watcher-${THOTH_WATCHED_NAMESPACE}"
           containers:
             - name: build-watcher
+
               env:
                 - name: KUBERNETES_API_URL
                   value: 'https://kubernetes.default.svc.cluster.local'
@@ -189,6 +190,11 @@ objects:
                     configMapKeyRef:
                       key: storage-bucket-name
                       name: thoth
+              livenessProbe:
+                failureThreshold: 1
+                tcpSocket:
+                  port: 80
+                initialDelaySeconds: 1800
               resources:
                 requests:
                   memory: "384Mi"
