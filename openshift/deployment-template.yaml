@@ -101,51 +101,12 @@ parameters:
     displayName: Pass token from service account
     value: "0"
 
-  - name: PROMETHEUS_PUSHGATEWAY_HOST
-    description: Prometheus push gateway host to send metrics to.
-    displayName: Prometheus push gateway host
-    required: false
-
-  - name: PROMETHEUS_PUSHGATEWAY_PORT
-    description: Prometheus push gateway port to send metrics to.
-    displayName: Prometheus push gateway port
-    required: false
-
   - name: THOTH_INFRA_NAMESPACE
     description: Namespace on which Build Watcher image is build.
     displayName: Thoth infra namespace
     required: true
 
 objects:
-  - kind: RoleBinding
-    apiVersion: v1
-    metadata:
-      annotations:
-        thoth-station.ninja/template-version: 0.1.0
-      name: "build-watcher-${THOTH_WATCHED_NAMESPACE}"
-      labels:
-        app: thoth
-        component: build-watcher
-    roleRef:
-      kind: ClusterRole
-      name: edit
-    subjects:
-      - kind: ServiceAccount
-        name: "build-watcher-${THOTH_WATCHED_NAMESPACE}"
-        namespace: "${THOTH_WATCHED_NAMESPACE}"
-
-  - kind: ServiceAccount
-    apiVersion: v1
-    metadata:
-      annotations:
-        thoth-station.ninja/template-version: 0.1.0
-      name: "build-watcher-${THOTH_WATCHED_NAMESPACE}"
-      namespace: "${THOTH_WATCHED_NAMESPACE}"
-      labels:
-        app: thoth
-        component: build-watcher
-    automountServiceAccountToken: true
-
   - kind: DeploymentConfig
     apiVersion: v1
     metadata:
