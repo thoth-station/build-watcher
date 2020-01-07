@@ -8,21 +8,20 @@
   register: project_exists
   ignore_errors: true
 
-- name: "importing required s2i ImageStreamTags from upstream registries"
+- name: "importing required build-watcher ImageStream from upstream registries"
   shell: >
     oc tag --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }}
-    docker.io/centos/python-36-centos7:latest python-36-centos7:latest
+    quay.io/thoth-station/build-watcher:v0.6.0-dev build-watcher:latest
   ignore_errors: true
 
-- name: create ImageStream
+- name: "creating Thoth ConfigMap"
   shell: >
-    oc process --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }}  --filename=../openshift/imageStream-template.yaml
-    | oc apply -f -
-
-- name: create BuildConfig
-  shell: >
-    oc process --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }}  --filename ../openshift/buildConfig-template.yaml
-    | oc apply -f -
+    oc process --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }}  --filename ../openshift/configmap-template.yaml
+    -p "THOTH_DEPLOYMENT_NAME={{ THOTH_DEPLOYMENT_NAME }}"
+    -p "PROMETHEUS_PUSHGATEWAY_HOST={{ PROMETHEUS_PUSHGATEWAY_HOST }}"
+    -p "PROMETHEUS_PUSHGATEWAY_PORT={{ PROMETHEUS_PUSHGATEWAY_PORT }}"
+    -p "SENTRY_DSN={{ SENTRY_DSN }}"
+    | oc apply --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }} -f -
 
 - name: create DeploymentConfig
   shell: >
@@ -31,7 +30,8 @@
     -p "THOTH_INFRA_NAMESPACE={{ THOTH_INFRA_NAMESPACE }}"
     -p "THOTH_ENVIRONMENT_TYPE={{ THOTH_ENVIRONMENT_TYPE }}"
     -p "THOTH_NO_TLS_VERIFY={{ THOTH_NO_TLS_VERIFY }}"
-    -p "THOTH_NO_REGISTRY_TLS_VERIFY={{ THOTH_NO_REGISTRY_TLS_VERIFY }}"
+    -p "THOTH_NO_SOURCE_REGISTRY_TLS_VERIFY={{ THOTH_NO_SOURCE_REGISTRY_TLS_VERIFY }}"
+    -p "THOTH_NO_DESTINATION_REGISTRY_TLS_VERIFY={{ THOTH_NO_DESTINATION_REGISTRY_TLS_VERIFY }}"
     -p "THOTH_USER_API_HOST={{ THOTH_USER_API_HOST }}"
     -p "THAMOS_DISABLE_TLS_WARNING={{ THAMOS_DISABLE_TLS_WARNING }}"
     -p "THOTH_PUSH_REGISTRY={{ THOTH_PUSH_REGISTRY }}"
@@ -43,4 +43,5 @@
     -p "THOTH_DST_REGISTRY_USER={{ THOTH_DST_REGISTRY_USER }}"
     -p "THOTH_DST_REGISTRY_PASSWORD={{ THOTH_DST_REGISTRY_PASSWORD }}"
     -p "PROMETHEUS_PUSHGATEWAY_HOST={{ PROMETHEUS_PUSHGATEWAY_HOST }}"
-    -p "PROMETHEUS_PUSHGATEWAY_PORT={{ PROMETHEUS_PUSHGATEWAY_PORT }}" | oc apply -f -
+    -p "PROMETHEUS_PUSHGATEWAY_PORT={{ PROMETHEUS_PUSHGATEWAY_PORT }}"
+    | oc apply --namespace {{ THOTH_BUILD_WATCHER_NAMESPACE }} -f -
