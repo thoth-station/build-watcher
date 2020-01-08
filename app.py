@@ -165,7 +165,7 @@ def _do_analyze_build(
     dst_verify_tls: bool = True,
 ) -> None:
     if push_registry:
-        _LOGGER.info("Pushing image %r to an external push registry %r", output_reference, push_registry)
+        _LOGGER.info("Pushing output image %r to an external push registry %r", output_reference, push_registry)
         output_reference = _push_image(
             output_reference,
             push_registry,
@@ -177,7 +177,22 @@ def _do_analyze_build(
             dst_verify_tls=dst_verify_tls,
         )
         _METRIC_IMAGES_PUSHED_REGISTRY.inc()
-        _LOGGER.info("Successfully pushed image to %r", output_reference)
+        _LOGGER.info("Successfully pushed output image to %r", output_reference)
+
+        if base_input_reference:
+            _LOGGER.info("Pushing base image %r to an external push registry %r", base_input_reference, push_registry)
+            base_input_reference = _push_image(
+                base_input_reference,
+                push_registry,
+                src_registry_user,
+                src_registry_password,
+                dst_registry_user,
+                dst_registry_password,
+                src_verify_tls=src_verify_tls,
+                dst_verify_tls=dst_verify_tls,
+            )
+            _METRIC_IMAGES_PUSHED_REGISTRY.inc()
+            _LOGGER.info("Successfully pushed base image to %r", base_input_reference)
 
     analysis_response = build_analysis(
         base_image=base_input_reference,
