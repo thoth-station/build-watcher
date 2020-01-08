@@ -267,6 +267,8 @@ def _push_image(
 
     image_name = image.rsplit("/", maxsplit=1)[1]
     if "quay.io" in push_registry:
+        if "sha256" in image_name:
+            image_name = image_name.replace("@sha256", "")
         output = f"{push_registry}:{image_name.replace(':','-')}"
     else:
         output = f"{push_registry}/{image_name}"
