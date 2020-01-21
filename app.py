@@ -24,6 +24,7 @@ import time
 from multiprocessing import Process
 from multiprocessing import Queue
 from multiprocessing import Manager
+from requests.exceptions import HTTPError
 
 import click
 
@@ -99,6 +100,9 @@ def _get_build(openshift, strategy: dict, build_reference: dict, event_metadata:
         build_log = openshift.get_build_log(
             build_id=event_metadata.get("name"), namespace=event_metadata.get("namespace")
         )
+    except HTTPError as exc:
+        _LOGGER.warning("Failed to get the log for build %s: %s", event_metadata.get("name"), str(exc))
+        build_log = None
     except Exception as exc:
         _LOGGER.exception("Failed to get the log for build %s: %s", event_metadata.get("name"), str(exc))
         build_log = None
