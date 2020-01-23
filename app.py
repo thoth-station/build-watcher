@@ -33,7 +33,7 @@ from thamos.config import config as configuration
 from thoth.common import init_logging
 from thoth.common import OpenShift
 from thoth.analyzer import run_command
-
+from thoth.analyzer import CommandError
 from prometheus_client import CollectorRegistry, Gauge, Counter, push_to_gateway
 
 init_logging()
@@ -180,8 +180,9 @@ def _do_analyze_build(
             src_verify_tls=src_verify_tls,
             dst_verify_tls=dst_verify_tls,
         )
-        _METRIC_IMAGES_PUSHED_REGISTRY.inc()
-        _LOGGER.info("Successfully pushed output image to %r", output_reference)
+        if output_reference:
+            _METRIC_IMAGES_PUSHED_REGISTRY.inc()
+            _LOGGER.info("Successfully pushed output image to %r", output_reference)
 
         if base_input_reference:
             _LOGGER.info("Pushing base image %r to an external push registry %r", base_input_reference, push_registry)
@@ -195,8 +196,9 @@ def _do_analyze_build(
                 src_verify_tls=src_verify_tls,
                 dst_verify_tls=dst_verify_tls,
             )
-            _METRIC_IMAGES_PUSHED_REGISTRY.inc()
-            _LOGGER.info("Successfully pushed base image to %r", base_input_reference)
+            if base_input_reference:
+                _METRIC_IMAGES_PUSHED_REGISTRY.inc()
+                _LOGGER.info("Successfully pushed base image to %r", base_input_reference)
 
     analysis_response = build_analysis(
         base_image=base_input_reference,
@@ -279,9 +281,16 @@ def _push_image(
     cmd += f"docker://{image} docker://{output}"
 
     _LOGGER.debug("Running: %s", cmd)
-    command = run_command(cmd)
-    _LOGGER.debug("%s stdout:\n%s\n%s", _SKOPEO_EXEC_PATH, command.stdout, command.stderr)
-
+    try:
+        command = run_command(cmd)
+        _LOGGER.debug("%s stdout:\n%s\n%s", _SKOPEO_EXEC_PATH, command.stdout, command.stderr)
+    except CommandError as exc:
+        if "Error determining manifest MIME type" in exc.stderr:
+            # Manifest MIME type error is caused by the way image is build. we have no control over it.
+            _LOGGER.warning("Ignoring error caused by invalid manifest MIME type during push: %s", str(exc))
+            return
+        else:
+            _LOGGER.exception("Failed to push image %r to external registry: %s", image_name, str(exc))
     return output
 
 
