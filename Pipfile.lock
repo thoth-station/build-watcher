@@ -475,11 +475,11 @@
         },
         "thamos": {
             "hashes": [
-                "sha256:3330e089536dccbe26fbcc950232e23d9688ebc0482793201db037cbf716373d",
-                "sha256:59352961786cbec07ae70e719def095f13bc45271b20ea75ca7dbe0d8c848a0e"
+                "sha256:07c86dd519ecec611484a21cf6d3b89b4904c2c8c256f52aae8384d7dbeb3f02",
+                "sha256:4043526c3a7eb2652e4abda163aac7b2d501a581b85cfcb4ec7f3cd9060dd5c6"
             ],
             "index": "pypi",
-            "version": "==0.7.7"
+            "version": "==0.8.0"
         },
         "thoth-analyzer": {
             "hashes": [
@@ -496,6 +496,13 @@
             ],
             "index": "pypi",
             "version": "==0.10.0"
+        },
+        "thoth-python": {
+            "hashes": [
+                "sha256:a43ec97d2c1d575505b0f50574cb2cd01c5e8cadd38f707d7761a3ab4e4733e7",
+                "sha256:f4422f51a618348285388882e004f7e68d5ce4e482154bd18d074278741e104d"
+            ],
+            "version": "==0.9.1"
         },
         "thoth-python": {
             "hashes": [
