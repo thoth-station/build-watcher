@@ -34,7 +34,7 @@ from thoth.common import init_logging
 from thoth.common import OpenShift
 from thoth.analyzer import run_command
 from thoth.analyzer import CommandError
-from prometheus_client import CollectorRegistry, Gauge, Counter, push_to_gateway
+from prometheus_client import CollectorRegistry, Counter, push_to_gateway
 
 init_logging()
 prometheus_registry = CollectorRegistry()
