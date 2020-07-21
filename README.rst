@@ -74,4 +74,3 @@ picked from your acccount) and pass correct values/parameters to CLI:
   $ pipenv install
   $ oc login <cluster>
   $ KUBERNETES_VERIFY_TLS=1 pipenv run python3 app.py --build-watcher-namespace jupyterhub --thoth-api-host user-api-thoth.redhat.com --no-tls-verify --pass-token --no-registry-tls-verify
-
