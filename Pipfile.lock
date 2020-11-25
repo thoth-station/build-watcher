@@ -1,11 +1,11 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "cfb4764260604fd43903fd0c77d2e22d4d58c63a581569f9217a8443a455e335"
+            "sha256": "62c8086be6e3b661c83d9c894ea4fa26c57eab08946763883338c177f0ddacc3"
         },
         "pipfile-spec": 6,
         "requires": {
-            "python_version": "3.6"
+            "python_version": "3.8"
         },
         "sources": [
             {
@@ -149,14 +149,6 @@
             ],
             "version": "==3.0.0"
         },
-        "dataclasses": {
-            "hashes": [
-                "sha256:3459118f7ede7c8bea0fe795bff7c6c2ce287d01dd226202f7c9ebc0610a7836",
-                "sha256:494a6dcae3b8bcf80848eea2ef64c0cc5cd307ffc263e17cdf42f3e5420808e6"
-            ],
-            "markers": "python_version >= '3.6' and python_version < '3.7'",
-            "version": "==0.7"
-        },
         "delegator.py": {
             "hashes": [
                 "sha256:814657d96b98a244c479e3d5f6e9e850ac333e85f807d6bc846e72bbb2537806",
@@ -186,13 +178,6 @@
             ],
             "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==2.10"
-        },
-        "idna-ssl": {
-            "hashes": [
-                "sha256:a933e3bb13da54383f9e8f35dc4f9cb9eb9b3b78c6b36f311254d6d0d92c6c7c"
-            ],
-            "markers": "python_version < '3.7'",
-            "version": "==1.1.0"
         },
         "invectio": {
             "hashes": [
