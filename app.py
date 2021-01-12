@@ -203,14 +203,19 @@ def _do_analyze_build(
                 _LOGGER.info("Successfully pushed base image to %r", base_input_reference)
 
     analysis_response = build_analysis(
-        base_image=base_input_reference,
-        output_image=output_reference,
         build_log=build_log_reference,
+        base_image=base_input_reference,
+        base_registry_password=src_registry_password,
+        base_registry_user=src_registry_user,
+        base_registry_verify_tls=src_verify_tls,
         environment_type=environment_type,
-        registry_user=dst_registry_user,
-        registry_password=dst_registry_password,
-        registry_verify_tls=dst_verify_tls,
         nowait=True,
+        output_image=output_reference,
+        output_registry_password=dst_registry_password,
+        output_registry_user=dst_registry_user,
+        output_registry_verify_tls=dst_verify_tls,
+        force=force,
+        debug=debug,
     )
 
     if analysis_response.base_image_analysis.analysis_id:
@@ -232,7 +237,8 @@ def _do_analyze_build(
         base_input_reference,
         analysis_response.output_image_analysis.analysis_id,
         analysis_response.base_image_analysis.analysis_id,
-        analysis_response.build_log_analysis.analysis_id,
+        analysis_response.buildlog_analysis.analysis_id,
+        analysis_response.buildlog_document_id,
     )
 
 
