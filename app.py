@@ -30,14 +30,25 @@ import click
 
 from thamos.lib import build_analysis
 from thamos.config import config as configuration
+from thamos import __version__ as __thamos_version__
 from thoth.common import init_logging
 from thoth.common import OpenShift
+from thoth.common import __version__ as __common_version__
+from thoth.analyzer import __version__ as __analyzer_version__
 from thoth.analyzer import run_command
 from thoth.analyzer import CommandError
 from prometheus_client import CollectorRegistry, Counter, push_to_gateway
 
 init_logging()
 prometheus_registry = CollectorRegistry()
+
+__version__ = "0.6.0"
+__component_version__ = (
+    f"{__version__}+"
+    f"common.{__common_version__}."
+    f"analyzer.{__analyzer_version__}."
+    f"thamos.{__thamos_version__}"
+)
 
 _LOGGER = logging.getLogger("thoth.build_watcher")
 
@@ -497,6 +508,8 @@ def cli(
     """Build watcher bot for analyzing image builds done in cluster."""
     if verbose:
         _LOGGER.setLevel(logging.DEBUG)
+
+    _LOGGER.info("This is build-watcher in version %r", __component_version__) 
 
     _LOGGER.info(
         "Build watcher is watching namespace %r and submitting resulting images to Thoth at %r",
