@@ -167,6 +167,8 @@ def _do_analyze_build(
     dst_registry_password: str = None,
     src_verify_tls: bool = True,
     dst_verify_tls: bool = True,
+    debug: bool = False,
+    force: bool = False,
 ) -> None:
     if push_registry:
         _LOGGER.info("Pushing output image %r to an external push registry %r", output_reference, push_registry)
@@ -304,6 +306,8 @@ def _submitter(
     dst_registry_password: str = None,
     no_src_registry_tls_verify: bool = False,
     no_dst_registry_tls_verify: bool = False,
+    debug: bool = False,
+    force: bool = False,
 ) -> None:
     """Read messages from queue and submit each message with image to Thoth for analysis."""
     while True:
@@ -331,6 +335,8 @@ def _submitter(
                 dst_registry_password=dst_registry_password,
                 src_verify_tls=not no_src_registry_tls_verify,
                 dst_verify_tls=not no_dst_registry_tls_verify,
+                debug=debug,
+                force=force,
             )
         except Exception as exc:
             _LOGGER.exception("Failed to submit image %r for analysis to Thoth: %s", output_reference, str(exc))
@@ -449,6 +455,20 @@ def _submitter(
     envvar="THOTH_ENVIRONMENT_TYPE",
     help="Type of environment - type of images - runtime or buildtime analyzed in the namespace.",
 )
+@click.option(
+    "--debug",
+    is_flag=True,
+    show_default=True,
+    envvar="THOTH_BUILD_ANALYSIS_DEBUG",
+    help="Run build analysis in debug mode.",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    show_default=True,
+    envvar="THOTH_BUILD_ANALYSIS_FORCE",
+    help="Do not use cached results, always force analysis on the backend.",
+)
 def cli(
     build_watcher_namespace: str,
     thoth_api_host: str = None,
@@ -465,6 +485,8 @@ def cli(
     analyze_existing: bool = None,
     workers_count: int = None,
     environment_type: str = None,
+    debug: bool = False,
+    force: bool = False,
 ):
     """Build watcher bot for analyzing image builds done in cluster."""
     if verbose:
@@ -519,6 +541,8 @@ def cli(
         dst_registry_password,
         no_src_registry_tls_verify,
         no_dst_registry_tls_verify,
+        debug,
+        force,
     ]
     # We do not use multiprocessing's Pool here as we manage lifecycle of workers on our own. If any fails, give
     # up and report errors.
