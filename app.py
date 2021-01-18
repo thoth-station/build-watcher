@@ -233,11 +233,14 @@ def _do_analyze_build(
     if analysis_response.output_image_analysis.analysis_id:
         _METRIC_IMAGES_SUBMITTED.inc()
 
-    try:
-        _LOGGER.info("Submitting metrics to Prometheus pushgateway %r", _THOTH_METRICS_PUSHGATEWAY_URL)
-        push_to_gateway(_THOTH_METRICS_PUSHGATEWAY_URL, job="build-watcher", registry=prometheus_registry)
-    except Exception as e:
-        _LOGGER.exception(f"An error occurred pushing the metrics: {str(e)}")
+    if _THOTH_METRICS_PUSHGATEWAY_URL:
+        try:
+            _LOGGER.info("Submitting metrics to Prometheus pushgateway %r", _THOTH_METRICS_PUSHGATEWAY_URL)
+            push_to_gateway(_THOTH_METRICS_PUSHGATEWAY_URL, job="build-watcher", registry=prometheus_registry)
+        except Exception as e:
+            _LOGGER.exception(f"An error occurred pushing the metrics: {str(e)}")
+    else:
+        _LOGGER.info("Not pushing metrics as Prometheus pushgateway was not provided")
 
     _LOGGER.info(
         "Successfully submitted %r, %r, build_log, to Thoth for analysis; analysis ids respectively: %r, %r, %r",
