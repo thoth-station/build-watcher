@@ -126,7 +126,7 @@ def _event_producer(queue: Queue, build_watcher_namespace: str) -> None:
     """Accept events from the cluster and queue them into work queue processed by the main process."""
     _LOGGER.info("Starting event producer")
     openshift = OpenShift()
-    v1_build = openshift.ocp_client.resources.get(api_version="v1", kind="Build")
+    v1_build = openshift.ocp_client.resources.get(api_version="build.openshift.io/v1", kind="Build")
     for event in v1_build.watch(namespace=build_watcher_namespace):
         event_name = event["object"].metadata.name
         build_reference = {
