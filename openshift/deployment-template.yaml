@@ -141,6 +141,10 @@ objects:
                   value: "${THOTH_PUSH_REGISTRY}"
                 - name: THOTH_LOG_BUILD_WATCHER
                   value: INFO
+                - name: THOTH_ERROR_FALLBACK
+                  value: "1"
+                - name: THOTH_LOGGING_NO_JSON
+                  value: "0"
                 - name: THOTH_USER_API_HOST
                   value: "${THOTH_USER_API_HOST}"
                 - name: THOTH_NO_TLS_VERIFY
