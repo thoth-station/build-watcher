@@ -80,7 +80,7 @@ objects:
         sourceStrategy:
           from:
             kind: ImageStreamTag
-            name: s2i-thoth-ubi8-py36:latest
+            name: s2i-thoth-ubi8-py38:latest
           env:
             - name: ENABLE_PIPENV
               value: '1'
