@@ -226,11 +226,11 @@ def _do_analyze_build(
         debug=debug,
     )
 
-    if analysis_response.base_image_analysis.analysis_id:
+    if analysis_response.base_image_analysis and analysis_response.base_image_analysis.analysis_id:
         _METRIC_IMAGES_SUBMITTED.inc()
-    if analysis_response.build_log_analysis.analysis_id:
+    if analysis_response.buildlog_analysis and analysis_response.buildlog_analysis.analysis_id:
         _METRIC_BUILD_LOGS_SUBMITTED.inc()
-    if analysis_response.output_image_analysis.analysis_id:
+    if analysis_response.output_image_analysis and analysis_response.output_image_analysis.analysis_id:
         _METRIC_IMAGES_SUBMITTED.inc()
 
     if _THOTH_METRICS_PUSHGATEWAY_URL:
@@ -243,13 +243,14 @@ def _do_analyze_build(
         _LOGGER.info("Not pushing metrics as Prometheus pushgateway was not provided")
 
     _LOGGER.info(
-        "Successfully submitted %r, %r, build_log, to Thoth for analysis; analysis ids respectively: %r, %r, %r",
+        "Successfully submitted %r, %r, build log, build log analysis to Thoth for analysis; "
+        "analysis ids respectively: %r, %r, %r, %r",
         output_reference,
         base_input_reference,
-        analysis_response.output_image_analysis.analysis_id,
-        analysis_response.base_image_analysis.analysis_id,
-        analysis_response.buildlog_analysis.analysis_id,
+        analysis_response.output_image_analysis.analysis_id if analysis_response.output_image_analysis else None,
+        analysis_response.base_image_analysis.analysis_id if analysis_response.base_image_analysis else None,
         analysis_response.buildlog_document_id,
+        analysis_response.buildlog_analysis.analysis_id if analysis_response.buildlog_analysis else None,
     )
 
 
@@ -447,7 +448,7 @@ def _submitter(
     "is used without route being exposed. This way you can copy images from internal registry to a remote one "
     "where Thoth has access to. Thoth will use the push registry specified instead of the original one where "
     "images were pushed to. If credentials are required to push into push registry, "
-    "see --registry-{user,password} configuration options.",
+    "see --dst-registry-{user,password} configuration options.",
 )
 @click.option(
     "--analyze-existing",
