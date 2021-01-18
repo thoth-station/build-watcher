@@ -44,10 +44,7 @@ prometheus_registry = CollectorRegistry()
 
 __version__ = "0.7.0"
 __component_version__ = (
-    f"{__version__}+"
-    f"common.{__common_version__}."
-    f"analyzer.{__analyzer_version__}."
-    f"thamos.{__thamos_version__}"
+    f"{__version__}+" f"common.{__common_version__}." f"analyzer.{__analyzer_version__}." f"thamos.{__thamos_version__}"
 )
 
 _LOGGER = logging.getLogger("thoth.build_watcher")
@@ -509,7 +506,7 @@ def cli(
     if verbose:
         _LOGGER.setLevel(logging.DEBUG)
 
-    _LOGGER.info("This is build-watcher in version %r", __component_version__) 
+    _LOGGER.info("This is build-watcher in version %r", __component_version__)
 
     _LOGGER.info(
         "Build watcher is watching namespace %r and submitting resulting images to Thoth at %r",
