@@ -1,16 +1,21 @@
 Thoth's build-watcher
 ---------------------
 
-Watch for builds done in OpenShift and automatically submit newly built images
-to Thoth's image analysis
+A bot that watches for builds done in an OpenShift cluster and automatically
+submits container images and build logs to Thoth. This bot helps Thoth to
+aggregate new knowledge about build failures and possible package issues.
 
-This is a simple bot that watches for in-cluster build events. If there is a
-successful build, build-watcher submits the resulting image to Thoth's analysis endpoint.
+See `the demo recording explaining build analysis
+<https://www.youtube.com/watch?v=bSkjSU0S5vs>`__ and/or `presentation available
+in this repository
+<https://github.com/thoth-station/build-watcher/blob/master/docs/pres.pdf>`__.
 
-The image, tag and registry are obtained from build specification. If you push
-images to an internal registry, make sure the bot has ``image-puller`` rights and has
-``THOTH_PASS_TOKEN`` flag set. The bot will propagate this token to Thoth's User API
-which will pull the image for analysis.
+
+Build analysis workflow
+=======================
+
+.. image:: https://raw.githubusercontent.com/thoth-station/build-watcher/master/pres/wf.png
+   :width: 600
 
 If you push images to an external registry, configure bot's credentials to pull
 images from the external registry. By default, there will be done
@@ -29,11 +34,6 @@ build-watcher to automatically submit images into an external registry
 (assuming the in-cluster one has no route exposed) which will then be used as a
 source registry for Thoth analysis. See push registry configuration in the help
 message.
-
-If you are deploying build-watcher into an existing project, you can set
-`THOTH_ANALYZE_EXISTING` which will make build-watcher to query for existing
-images present in image streams and submits all of them (with all tags) to
-Thoth for analysis.
 
 If you are monitoring a cluster with a lot of builds and pushing images to an
 external registry, you can optionally adjust `THOTH_BUILD_WATCHER_WORKERS`
@@ -73,4 +73,6 @@ picked from your acccount) and pass correct values/parameters to CLI:
   $ cd build-watcher
   $ pipenv install
   $ oc login <cluster>
-  $ KUBERNETES_VERIFY_TLS=1 pipenv run python3 app.py --build-watcher-namespace jupyterhub --thoth-api-host user-api-thoth.redhat.com --no-tls-verify --pass-token --no-registry-tls-verify
+  $ KUBERNETES_VERIFY_TLS=1 pipenv run python3 app.py --build-watcher-namespace jupyterhub --thoth-api-host khemenu.thoth-station.ninja --no-tls-verify --pass-token --no-registry-tls-verify
+
+See `pipenv run python3 app.py --help` for more info.
