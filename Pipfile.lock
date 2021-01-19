@@ -542,7 +542,7 @@
                 "sha256:c0d5903b463f015b254d6f52da82af3821d266fe516ae05fdc266e6abba5c3a8",
                 "sha256:d7732d12dfa91a2c06f89fa2b630a068ba12d39ad22a2078b477ef1948b38f3f"
             ],
-            "markers": "python_version >= '3.6' and python_version < '4'",
+            "markers": "python_version >= '3.6' and python_version < '4.0'",
             "version": "==9.8.2"
         },
         "rsa": {
@@ -628,10 +628,10 @@
         },
         "thamos": {
             "hashes": [
-                "sha256:7da83e00646761e9d0d27af73081b32a6561235182da4f48c86dede560673302"
+                "sha256:fa7b99b493433db727bf4ce2a5d3a9ce68bc3917293c1e40a489bae1cc4c8a0a"
             ],
             "index": "pypi",
-            "version": "==1.6.0"
+            "version": "==1.6.1"
         },
         "thoth-analyzer": {
             "hashes": [
@@ -683,7 +683,7 @@
                 "sha256:19188f96923873c92ccb987120ec4acaa12f0461fa9ce5d3d0772bc965a39e08",
                 "sha256:d8ff90d979214d7b4f8ce956e80f4028fc6860e4431f731ea4a8c08f23f99473"
             ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4' and python_version < '4'",
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4' and python_version < '4.0'",
             "version": "==1.26.2"
         },
         "websocket-client": {
