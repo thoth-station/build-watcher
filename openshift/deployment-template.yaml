@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: build-watcher-deployment
+  name: thoth-build-watcher-deployment
   annotations:
     description: This is Thoth - Build Watcher
     openshift.io/display-name: 'Thoth Core: Build Watcher'
@@ -14,9 +14,9 @@ metadata:
     template.openshift.io/provider-display-name: Red Hat, Inc.
     thoth-station.ninja/template-version: 0.1.0
   labels:
-    template: build-watcher-deployment
+    template: thoth-build-watcher-deployment
     app: thoth
-    component: build-watcher
+    component: thoth-build-watcher
 
 parameters:
   - description: Tag of the ImageStream to use
@@ -34,6 +34,7 @@ parameters:
     description: Type of images (runtime or buildtime) sent to image analysis to Thoth.
     displayName: Environment type
     required: true
+    value: "runtime"
 
   - name: THOTH_NO_TLS_VERIFY
     description: Do not perform TLS verification when communicating with Thoth User API.
@@ -69,6 +70,7 @@ parameters:
     description: Query for existing images built and submit them to Thoth for analysis.
     displayName: Analyze exising images.
     required: false
+    value: "1"
 
   - name: THOTH_BUILD_WATCHER_WORKERS
     description: Number of workers pushing images to an external registry and submitting image analysis in parallel.
@@ -102,9 +104,14 @@ parameters:
     value: "0"
 
   - name: THOTH_INFRA_NAMESPACE
-    description: Namespace on which Build Watcher image is build.
+    description: Namespace in which Build Watcher image is build.
     displayName: Thoth infra namespace
     required: true
+
+  - name: THOTH_LOGGING_NO_JSON
+    description: Do not log structured JSON logs.
+    displayName: Turn off structured logs.
+    value: "0"
 
 objects:
   - kind: DeploymentConfig
@@ -114,7 +121,7 @@ objects:
         thoth-station.ninja/template-version: 0.1.0
       labels:
         app: thoth
-        component: build-watcher
+        component: thoth-build-watcher
       name: "build-watcher-${THOTH_WATCHED_NAMESPACE}"
     spec:
       replicas: 1
@@ -122,12 +129,11 @@ objects:
         metadata:
           labels:
             app: thoth
-            component: build-watcher
+            component: thoth-build-watcher
         spec:
           serviceAccountName: "build-watcher-${THOTH_WATCHED_NAMESPACE}"
           containers:
             - name: build-watcher
-
               env:
                 - name: KUBERNETES_API_URL
                   value: 'https://kubernetes.default.svc.cluster.local'
@@ -141,10 +147,12 @@ objects:
                   value: "${THOTH_PUSH_REGISTRY}"
                 - name: THOTH_LOG_BUILD_WATCHER
                   value: INFO
+                - name: THOTH_LOGGING_NO_JSON
+                  value: "${THOTH_LOGGING_NO_JSON}"
                 - name: THOTH_ERROR_FALLBACK
                   value: "1"
                 - name: THOTH_LOGGING_NO_JSON
-                  value: "0"
+                  value: "${THOTH_LOGGING_NO_JSON}"
                 - name: THOTH_USER_API_HOST
                   value: "${THOTH_USER_API_HOST}"
                 - name: THOTH_NO_TLS_VERIFY
@@ -178,22 +186,22 @@ objects:
                   valueFrom:
                     configMapKeyRef:
                       key: prometheus-pushgateway-host
-                      name: thoth
+                      name: thoth-build-watcher
                 - name: PROMETHEUS_PUSHGATEWAY_PORT
                   valueFrom:
                     configMapKeyRef:
-                      name: thoth
+                      name: thoth-build-watcher
                       key: prometheus-pushgateway-port
                 - name: SENTRY_DSN
                   valueFrom:
                     configMapKeyRef:
-                      name: thoth
+                      name: thoth-build-watcher
                       key: sentry-dsn
                 - name: THOTH_DEPLOYMENT_NAME
                   valueFrom:
                     configMapKeyRef:
-                      key: storage-bucket-name
-                      name: thoth
+                      key: deployment-name
+                      name: thoth-build-watcher
               livenessProbe:
                 failureThreshold: 1
                 tcpSocket:
@@ -216,5 +224,5 @@ objects:
               - build-watcher
             from:
               kind: ImageStreamTag
-              name: 'build-watcher:${IMAGE_STREAM_TAG}'
+              name: 'thoth-build-watcher:${IMAGE_STREAM_TAG}'
               namespace: '${THOTH_INFRA_NAMESPACE}'

@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: build-watcher-configmap
+  name: thoth-build-watcher-configmap
   annotations:
     description: This is Thoth - Build Watcher
     openshift.io/display-name: Thoth Core Configmap
-    version: 0.1.0
+    version: 0.2.0
     tags: thoth,ai-stacks,aistacks
     template.openshift.io/documentation-url: https://github.com/Thoth-Station/
     template.openshift.io/long-description: >
@@ -14,29 +14,23 @@ metadata:
   labels:
     app: thoth
     template: build-watcher-configmap
-    component: build-watcher
+    component: thoth-build-watcher
 
 objects:
   - kind: ConfigMap
     apiVersion: v1
     metadata:
-      name: thoth
+      name: thoth-build-watcher
       labels:
         app: thoth
-        component: configmap
+        component: thoth-build-watcher
     data:
-      storage-bucket-name: ${THOTH_DEPLOYMENT_NAME}
       prometheus-pushgateway-host: ${PROMETHEUS_PUSHGATEWAY_HOST}
       prometheus-pushgateway-port: ${PROMETHEUS_PUSHGATEWAY_PORT}
       sentry-dsn: ${SENTRY_DSN}
+      deployment-name: ${THOTH_DEPLOYMENT_NAME}
 
 parameters:
-  - description: Storage bucket name to use for persisted files
-    displayName: Thoth Storage bucket name
-    required: true
-    value: thoth-test
-    name: THOTH_DEPLOYMENT_NAME
-
   - displayName: PROMETHEUS_PUSHGATEWAY_HOST
     description: A host to push prometheus metrics via pushgateway.
     name: PROMETHEUS_PUSHGATEWAY_HOST
@@ -53,3 +47,9 @@ parameters:
     description: A DSN to a Sentry instance to log to.
     name: SENTRY_DSN
     required: false
+
+  - displayName: THOTH_DEPLOYMENT_NAME
+    description: A name of deployment where build-watcher lives in.
+    name: THOTH_DEPLOYMENT_NAME
+    required: false
+    value: "user"
