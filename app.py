@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # thoth-build-watcher
-# Copyright(C) 2019, 2020 Fridolin Pokorny
+# Copyright(C) 2019-2021 Fridolin Pokorny
 #
 # This program is free software: you can redistribute it and / or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,9 @@ import os
 import sys
 import logging
 import time
+from typing import Any
+from typing import Dict
+from typing import Optional
 from multiprocessing import Process
 from multiprocessing import Queue
 from multiprocessing import Manager
@@ -73,12 +76,12 @@ _METRIC_BUILDS_FAILED = Counter(
 )
 
 
-def _buildlog_metadata(api_endpoint: str = None, build_log: str = None) -> dict:
+def _buildlog_metadata(api_endpoint: Optional[str] = None, build_log: str = None) -> Dict[str, str]:
     """Gather metadata for the build log."""
     # Update the metadata with more details
     if not build_log:
         return {}
-    return {"apiversion": api_endpoint, "kind": "BuildLog", "log": build_log, "metadata": "string"}
+    return {"apiversion": api_endpoint, "kind": "BuildLog", "log": build_log}
 
 
 def _existing_producer(queue: Queue, build_watcher_namespace: str) -> None:
@@ -96,7 +99,9 @@ def _existing_producer(queue: Queue, build_watcher_namespace: str) -> None:
     _LOGGER.info("Queuing existing images for analyses has finished, all of them were scheduled for analysis")
 
 
-def _get_build(openshift, strategy: dict, build_reference: dict, event_metadata: dict) -> dict:
+def _get_build(
+    openshift, strategy: Dict[str, Any], build_reference: Dict[str, Any], event_metadata: Dict[str, Any]
+) -> dict:
     """Gather Build log and Base Image based upon the strategy of the build."""
     if strategy.get("sourceStrategy"):
         build_reference["base_input_reference"] = strategy.get("sourceStrategy", {}).get("from", {}).get("name", None)
@@ -166,13 +171,13 @@ def _do_analyze_build(
     output_reference: str,
     build_log_reference: str,
     base_input_reference: str,
-    push_registry: str = None,
+    push_registry: Optional[str] = None,
     *,
-    environment_type: str = None,
-    src_registry_user: str = None,
-    src_registry_password: str = None,
-    dst_registry_user: str = None,
-    dst_registry_password: str = None,
+    environment_type: Optional[str] = None,
+    src_registry_user: Optional[str] = None,
+    src_registry_password: Optional[str] = None,
+    dst_registry_user: Optional[str] = None,
+    dst_registry_password: Optional[str] = None,
     src_verify_tls: bool = True,
     dst_verify_tls: bool = True,
     debug: bool = False,
@@ -257,13 +262,13 @@ def _do_analyze_build(
 def _push_image(
     image: str,
     push_registry: str,
-    src_registry_user: str = None,
-    src_registry_password: str = None,
-    dst_registry_user: str = None,
-    dst_registry_password: str = None,
+    src_registry_user: Optional[str] = None,
+    src_registry_password: Optional[str] = None,
+    dst_registry_user: Optional[str] = None,
+    dst_registry_password: Optional[str] = None,
     src_verify_tls: bool = True,
     dst_verify_tls: bool = True,
-) -> str:
+) -> Optional[str]:
     """Push the given image (fully specified with registry info) into another registry."""
     cmd = f"{_SKOPEO_EXEC_PATH} --insecure-policy copy "
 
@@ -308,7 +313,7 @@ def _push_image(
         if "Error determining manifest MIME type" in exc.stderr:
             # Manifest MIME type error is caused by the way image is build. we have no control over it.
             _LOGGER.warning("Ignoring error caused by invalid manifest MIME type during push: %s", str(exc))
-            return
+            return None
         else:
             _LOGGER.exception("Failed to push image %r to external registry: %s", image_name, str(exc))
     return output
@@ -318,10 +323,10 @@ def _submitter(
     queue: Queue,
     push_registry: str,
     environment_type: str,
-    src_registry_user: str = None,
-    src_registry_password: str = None,
-    dst_registry_user: str = None,
-    dst_registry_password: str = None,
+    src_registry_user: Optional[str] = None,
+    src_registry_password: Optional[str] = None,
+    dst_registry_user: Optional[str] = None,
+    dst_registry_password: Optional[str] = None,
     no_src_registry_tls_verify: bool = False,
     no_dst_registry_tls_verify: bool = False,
     debug: bool = False,
@@ -407,7 +412,8 @@ def _submitter(
     is_flag=True,
     envvar="THOTH_PASS_TOKEN",
     help="Pass OpenShift token to User API to enable image pulling "
-    "(disjoint with --registry-user and --registry-password).",
+    "(disjoint with --registry-user and --registry-password). This requires build-watcher to be run in the "
+    "same cluster as Thoth.",
 )
 @click.option(
     "--src-registry-user",
@@ -429,7 +435,7 @@ def _submitter(
     "-u",
     type=str,
     envvar="THOTH_DST_REGISTRY_USER",
-    help="Registry user used to pull images on Thoht side.",
+    help="Registry user used to pull images on Thoth side.",
 )
 @click.option(
     "--dst-registry-password",
@@ -461,6 +467,7 @@ def _submitter(
     "--workers-count",
     type=int,
     default=1,
+    show_default=True,
     envvar="THOTH_BUILD_WATCHER_WORKERS",
     help="Number of worker processes to submit image analysis in parallel.",
 )
@@ -489,20 +496,20 @@ def _submitter(
 )
 def cli(
     build_watcher_namespace: str,
-    thoth_api_host: str = None,
+    thoth_api_host: Optional[str] = None,
     verbose: bool = False,
     no_tls_verify: bool = False,
     no_src_registry_tls_verify: bool = False,
     no_dst_registry_tls_verify: bool = False,
     pass_token: bool = False,
-    src_registry_user: str = None,
-    src_registry_password: str = None,
-    dst_registry_user: str = None,
-    dst_registry_password: str = None,
-    push_registry: str = None,
-    analyze_existing: bool = None,
-    workers_count: int = None,
-    environment_type: str = None,
+    src_registry_user: Optional[str] = None,
+    src_registry_password: Optional[str] = None,
+    dst_registry_user: Optional[str] = None,
+    dst_registry_password: Optional[str] = None,
+    push_registry: Optional[str] = None,
+    analyze_existing: bool = False,
+    workers_count: int = 1,
+    environment_type: Optional[str] = None,
     debug: bool = False,
     force: bool = False,
 ):
