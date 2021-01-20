@@ -168,9 +168,9 @@ def _event_producer(queue: Queue, build_watcher_namespace: str) -> None:
 
 
 def _do_analyze_build(
-    output_reference: str,
-    build_log_reference: str,
-    base_input_reference: str,
+    output_reference: Optional[str] = None,
+    build_log_reference: Optional[str] = None,
+    base_input_reference: Optional[str] = None,
     push_registry: Optional[str] = None,
     *,
     environment_type: Optional[str] = None,
@@ -329,6 +329,9 @@ def _submitter(
     dst_registry_password: Optional[str] = None,
     no_src_registry_tls_verify: bool = False,
     no_dst_registry_tls_verify: bool = False,
+    no_base: bool = False,
+    no_output: bool = False,
+    no_build_log: bool = False,
     debug: bool = False,
     force: bool = False,
 ) -> None:
@@ -345,11 +348,26 @@ def _submitter(
             base_input_reference = None
             _LOGGER.info("Handling analysis of image %r", reference)
 
+        output = output_reference if not no_output else None
+        build_log = build_log_reference if not no_build_log else None
+        base = base_input_reference if not no_base else None
+
+        if not output and not build_log and not base:
+            _LOGGER.warning(
+                "Skipping %r as no input for build analysis would be sent based on limitations on "
+                "data to be sent; no base: %r, no output: %r, no build log: %r",
+                output_reference,
+                no_base,
+                no_output,
+                no_build_log,
+            )
+            continue
+
         try:
             _do_analyze_build(
-                output_reference,
-                build_log_reference,
-                base_input_reference,
+                output,
+                build_log,
+                base,
                 push_registry,
                 environment_type=environment_type,
                 src_registry_user=src_registry_user,
@@ -383,6 +401,8 @@ def _submitter(
     type=str,
     required=True,
     envvar="THOTH_USER_API_HOST",
+    default="khemenu.thoth-station.ninja",
+    show_default=True,
     help="Host to Thoth's User API - API endpoint discovery will be transparently done.",
 )
 @click.option(
@@ -481,6 +501,27 @@ def _submitter(
     help="Type of environment - type of images - runtime or buildtime analyzed in the namespace.",
 )
 @click.option(
+    "--no-base",
+    is_flag=True,
+    show_default=True,
+    envvar="THOTH_BUILD_ANALYSIS_NO_BASE_IMAGE",
+    help="Do not submit base container images for analysis.",
+)
+@click.option(
+    "--no-output",
+    is_flag=True,
+    show_default=True,
+    envvar="THOTH_BUILD_ANALYSIS_NO_OUTPUT_IMAGE",
+    help="Do not submit output (resulting) container images for analysis.",
+)
+@click.option(
+    "--no-build-log",
+    is_flag=True,
+    show_default=True,
+    envvar="THOTH_BUILD_ANALYSIS_NO_BUILD_LOG",
+    help="Do not submit build logs for analysis.",
+)
+@click.option(
     "--debug",
     is_flag=True,
     show_default=True,
@@ -510,12 +551,22 @@ def cli(
     analyze_existing: bool = False,
     workers_count: int = 1,
     environment_type: Optional[str] = None,
+    no_base: bool = False,
+    no_output: bool = False,
+    no_build_log: bool = False,
     debug: bool = False,
     force: bool = False,
 ):
     """Build watcher bot for analyzing image builds done in cluster."""
     if verbose:
         _LOGGER.setLevel(logging.DEBUG)
+
+    if no_base and no_output and no_build_log:
+        _LOGGER.error(
+            "At least one of base container image, output container image and build log needs to "
+            "be submitted to Thoth to trigger build analysis"
+        )
+        sys.exit(1)
 
     _LOGGER.info("This is build-watcher in version %r", __component_version__)
 
@@ -568,6 +619,9 @@ def cli(
         dst_registry_password,
         no_src_registry_tls_verify,
         no_dst_registry_tls_verify,
+        no_base,
+        no_output,
+        no_build_log,
         debug,
         force,
     ]
