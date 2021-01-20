@@ -110,3 +110,5 @@ picked from your account) and pass correct values/parameters to the CLI:
   $ KUBERNETES_VERIFY_TLS=1 pipenv run python3 app.py --build-watcher-namespace jupyterhub --thoth-api-host khemenu.thoth-station.ninja --no-tls-verify --pass-token --no-registry-tls-verify
 
 See ``pipenv run python3 app.py --help`` for more info.
+
+Copyright (C) 2020 AICoE `Project Thoth <http://thoth-station.ninja/>`__; Red Hat Inc.

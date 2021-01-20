@@ -103,6 +103,21 @@ parameters:
     displayName: Pass token from service account
     value: "0"
 
+  - name: THOTH_BUILD_ANALYSIS_NO_BASE_IMAGE
+    description: Do not submit base image to remote for container image analysis.
+    displayName: No base image analysis
+    value: "0"
+
+  - name: THOTH_BUILD_ANALYSIS_NO_BUILD_LOG
+    description: Do not submit build log to remote for analysis.
+    displayName: No build log analysis
+    value: "0"
+
+  - name: THOTH_BUILD_ANALYSIS_NO_OUTPUT_IMAGE
+    description: Do not submit output image to remote for container image analysis.
+    displayName: No output image analysis
+    value: "0"
+
   - name: THOTH_INFRA_NAMESPACE
     description: Namespace in which Build Watcher image is build.
     displayName: Thoth infra namespace
@@ -180,6 +195,12 @@ objects:
                 - name: THOTH_DST_REGISTRY_PASSWORD
                   value: "${THOTH_DST_REGISTRY_PASSWORD}"
                 # Set to a non-zero value to suppres annoying TLS warnings by Thamos lib:
+                - name: THOTH_BUILD_ANALYSIS_NO_BASE_IMAGE
+                  value: "${THOTH_BUILD_ANALYSIS_NO_BASE_IMAGE}"
+                - name: THOTH_BUILD_ANALYSIS_NO_BUILD_LOG
+                  value: "${HOTH_BUILD_ANALYSIS_NO_BUILD_LOG}"
+                - name: THOTH_BUILD_ANALYSIS_NO_OUTPUT_IMAGE
+                  value: "${THOTH_BUILD_ANALYSIS_NO_OUTPUT_IMAGE}"
                 - name: THAMOS_DISABLE_TLS_WARNING
                   value: "${THAMOS_DISABLE_TLS_WARNING}"
                 - name: PROMETHEUS_PUSHGATEWAY_HOST
