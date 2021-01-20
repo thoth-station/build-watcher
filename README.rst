@@ -16,15 +16,16 @@ in this repository
   in your OpenShift Source-To-Image builds to make builds verbose and ready
   for data aggregation. micropipenv can be enabled using ``ENABLE_MICROPIPENV=1``
   environment variable in Python 3 UBI/RHEL/CentOS/Fedora container images.
-  micropipenv is enabled by default in Thoth based s2i container images and
-  the environment variable stated has no effect.
+  micropipenv is enabled by default in `Thoth based s2i container
+  images <https://github.com/thoth-station/s2i-thoth>`__ and the environment
+  variable stated has no effect.
 
 Deploying build-watcher into a namespace
 ========================================
 
 The build of this bot is done using OpenShift's s2i. OpenShift templates to
 deploy this bot are present in ``openshift/`` directory. See required
-parameters for configuring this bot.
+parameters for configuring this bot in ``deploy.sh`` script.
 
 To deploy this bot, log into your OpenShift cluster:
 
@@ -75,7 +76,8 @@ Credentials handling
 
 Note this bot does not directly analyze images. Credentials (and possibly
 token) are propagated to Thoth's User API which triggers analysis on
-backend side.
+backend side. If this is not desired, you can turn of this by disabling certain
+container image analysis (base or output).
 
 Caching results on Thoth side
 =============================
