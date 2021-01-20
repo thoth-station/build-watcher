@@ -45,7 +45,7 @@ from prometheus_client import CollectorRegistry, Counter, push_to_gateway
 init_logging()
 prometheus_registry = CollectorRegistry()
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 __component_version__ = (
     f"{__version__}+" f"common.{__common_version__}." f"analyzer.{__analyzer_version__}." f"thamos.{__thamos_version__}"
 )

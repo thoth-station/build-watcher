@@ -183,3 +183,27 @@
 * :pushpin: Automatic update of dependency thoth-common from 0.8.5 to 0.8.7
 * :pushpin: Automatic update of dependency thamos from 0.3.1 to 0.4.0
 * :pushpin: Automatic update of dependency thoth-common from 0.8.3 to 0.8.5
+
+## Release 0.8.0 (2021-01-20T09:38:40)
+### Features
+* Do not propagate credentials if user did not request analysis (#219)
+* Extend README file with links (#218)
+* No submit parameters (#217)
+* Adjust deployment templates and README
+* Adjust README file and add docs
+* Provide parameters to avoid submitting specific inputs (#215)
+* Fix typing in the application (#212)
+* :arrow_up: Automatic update of dependencies by kebechet. (#216)
+* :arrow_up: Automatic update of dependencies by kebechet. (#211)
+* Remove Ansible playbooks (#209)
+* Add missing template title (#208)
+* Add Kebechet issue templates (#206)
+* Use s2i-thoth-ubi-8-py38 as a base image (#195)
+* Fix logged entries which might be None (#202)
+* Add pull-request template (#196)
+* Tweak environment variables supplied (#203)
+* Fix pre-commit issues and bump black version (#197)
+* Fix API version in sources (#199)
+* :arrow_up: Automatic update of dependencies by kebechet. (#200)
+### Bug Fixes
+* Push to registry only if the push registry was provided (#204)
